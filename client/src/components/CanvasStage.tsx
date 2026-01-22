@@ -790,8 +790,8 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const handleLabelClick = (lineId: string, currentLength: number, e: any) => {
     e.cancelBubble = true;
     const line = lines.find((l) => l.id === lineId);
-    if (line && !line.gateId) {
-      if (selectedGateType) {
+    if (line) {
+      if (selectedGateType && !line.gateId) {
         const stage = e.target.getStage();
         const rect = stage.container().getBoundingClientRect();
         const pointerScreen = {
@@ -813,6 +813,13 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
         setEditError(null);
         setSelectedGateId(null);
       }
+    }
+  };
+
+  const handleLabelPointerDown = (e: any) => {
+    e.cancelBubble = true;
+    if (e.evt?.preventDefault) {
+      e.evt.preventDefault();
     }
   };
 
@@ -1114,8 +1121,10 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
                         offsetX={estimatedWidth / 2}
                         offsetY={estimatedHeight / 2}
                         rotation={readableAngle}
-                        listening={!isGate && !isReadOnly}
+                        listening={!isReadOnly}
                         onClick={isReadOnly ? undefined : (e) => handleLabelClick(line.id, line.length_mm, e)}
+                        onMouseDown={isReadOnly ? undefined : handleLabelPointerDown}
+                        onTouchStart={isReadOnly ? undefined : handleLabelPointerDown}
                       >
                         <Tag
                           fill={tagFill}
