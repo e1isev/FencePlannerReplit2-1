@@ -9,6 +9,7 @@ import type {
 import type { FenceLine } from "@/types/models";
 import { countBoardsPurchased } from "@/geometry/panels";
 import { getFenceStyleLabel } from "@/config/fenceStyles";
+import { formatGateWidthM } from "@/lib/gates/gateWidth";
 import {
   resolveResidentialRow,
   resolveResidentialSkuAndPrice,
@@ -28,7 +29,6 @@ export type LineItemType =
   | "bracket";
 
 const formatHeightM = (heightM: number) => `${heightM.toFixed(1)}m`;
-const roundToTenth = (value: number) => Math.round(value * 10) / 10;
 
 export type QuoteLineItem = {
   name: string;
@@ -51,7 +51,7 @@ export type QuoteSummary = {
 };
 
 const formatGateLabel = (gate: Gate, widthM: number) => {
-  const roundedWidth = roundToTenth(widthM).toFixed(1);
+  const roundedWidth = formatGateWidthM(widthM);
   if (gate.type.startsWith("double")) return `Double Gate ${roundedWidth}m`;
   if (gate.type.startsWith("single")) return `Single Gate ${roundedWidth}m`;
   if (gate.type.startsWith("sliding")) return `Sliding Gate ${roundedWidth}m`;

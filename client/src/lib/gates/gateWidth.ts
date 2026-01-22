@@ -41,22 +41,20 @@ export const getGateWidthRules = (gateType: GateType | string): GateWidthRule =>
   return GATE_WIDTH_RULES[getGateWidthType(gateType)];
 };
 
-export const snapGateWidthM = (widthM: number, stepM: number) => {
-  if (!Number.isFinite(widthM)) return widthM;
-  const snapped = Math.round(widthM / stepM) * stepM;
-  return Math.round(snapped * 1000) / 1000;
-};
-
 export const clampGateWidthM = (widthM: number, gateType: GateType | string) => {
   const rules = getGateWidthRules(gateType);
-  const clamped = Math.min(rules.maxM, Math.max(rules.minM, widthM));
-  const snapped = snapGateWidthM(clamped, rules.stepM);
-  return Math.min(rules.maxM, Math.max(rules.minM, snapped));
+  return Math.min(rules.maxM, Math.max(rules.minM, widthM));
 };
 
 export const getDefaultGateWidthMm = (gateType: GateType | string) => {
   const rules = getGateWidthRules(gateType);
   return Math.round(rules.defaultM * 1000);
+};
+
+export const formatGateWidthM = (widthM: number) => {
+  if (!Number.isFinite(widthM)) return "";
+  const value = String(widthM);
+  return value.includes(".") ? value.replace(/\.?0+$/, "") : value;
 };
 
 export const normalizeGateWidthMm = (gate: Gate): Gate => {

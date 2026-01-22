@@ -1401,7 +1401,7 @@ export const useAppStore = create<AppState>()(
 
         const finalWidthM =
           maxWidthM > 0 ? Math.min(clampedWidthM, maxWidthM) : clampedWidthM;
-        const finalWidthMm = Math.round(finalWidthM * 1000);
+        const finalWidthMm = finalWidthM * 1000;
 
         const half = finalWidthM / 2;
         const newAMeters = {

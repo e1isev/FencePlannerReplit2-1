@@ -4,7 +4,6 @@ import {
   buildGateSku,
   validateCatalog,
   extractAvailableOptions,
-  snapToAvailableWidth,
   findSlidingGateRange,
   type AvailableOptions,
   type CatalogValidationResult,
@@ -314,22 +313,8 @@ export const resolveWithSkuBuilder = (
       };
     }
 
-    let pricedWidth = selection.gateWidth_m;
-    let widthSnapped = false;
-
-    if (gateType === "Single") {
-      const snapped = snapToAvailableWidth(selection.gateWidth_m, index.options.gateWidths.single);
-      if (snapped) {
-        pricedWidth = snapped.pricedWidth;
-        widthSnapped = snapped.snapped;
-      }
-    } else if (gateType === "Double") {
-      const snapped = snapToAvailableWidth(selection.gateWidth_m, index.options.gateWidths.double);
-      if (snapped) {
-        pricedWidth = snapped.pricedWidth;
-        widthSnapped = snapped.snapped;
-      }
-    }
+    const pricedWidth = selection.gateWidth_m;
+    const widthSnapped = false;
 
     if (gateType === "Sliding") {
       const widthRange = findSlidingGateRange(selection.gateWidth_m, index.options.gateWidths.sliding);
@@ -501,5 +486,5 @@ export const resolveWithSkuBuilder = (
   };
 };
 
-export { validateCatalog, extractAvailableOptions, snapToAvailableWidth, findSlidingGateRange };
+export { validateCatalog, extractAvailableOptions, findSlidingGateRange };
 export type { AvailableOptions, CatalogValidationResult } from "./skuBuilder";

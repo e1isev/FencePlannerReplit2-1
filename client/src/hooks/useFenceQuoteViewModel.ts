@@ -3,6 +3,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useAppStore } from "@/store/appStore";
 import { usePricingStore } from "@/store/pricingStore";
 import { calculateCosts } from "@/lib/pricing";
+import { formatGateWidthM } from "@/lib/gates/gateWidth";
 import { getFenceColourMode } from "@/config/fenceColors";
 import type {
   QuoteDescriptionBlock,
@@ -86,7 +87,7 @@ export const useFenceQuoteViewModel = (): QuoteViewModel => {
         item.itemType === "gate" && item.gateWidthRange
           ? `Gate width range: ${item.gateWidthRange} m`
           : item.itemType === "gate" && item.gateWidthM
-            ? `Gate width: ${item.gateWidthM.toFixed(2)} m`
+            ? `Gate width: ${formatGateWidthM(item.gateWidthM)} m`
             : null;
       const skuLabel = item.sku && item.sku !== "MISSING_SHEET_MATCH" ? `SKU: ${item.sku}` : null;
       const longDescriptionBlocks: QuoteDescriptionBlock[] = [];
