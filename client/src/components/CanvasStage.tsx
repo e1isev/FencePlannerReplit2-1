@@ -816,6 +816,13 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
     }
   };
 
+  const handleLabelPointerDown = (e: any) => {
+    e.cancelBubble = true;
+    if (e.evt?.preventDefault) {
+      e.evt.preventDefault();
+    }
+  };
+
   const handleLineClick = (lineId: string, e: any) => {
     e.cancelBubble = true;
     if (isDrawing) return;
@@ -1116,6 +1123,8 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
                         rotation={readableAngle}
                         listening={!isGate && !isReadOnly}
                         onClick={isReadOnly ? undefined : (e) => handleLabelClick(line.id, line.length_mm, e)}
+                        onMouseDown={isReadOnly ? undefined : handleLabelPointerDown}
+                        onTouchStart={isReadOnly ? undefined : handleLabelPointerDown}
                       >
                         <Tag
                           fill={tagFill}
