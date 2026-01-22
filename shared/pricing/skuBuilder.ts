@@ -51,8 +51,9 @@ const formatHeightH = (heightM: number): string => {
 };
 
 const formatWidthW = (widthM: number): string => {
-  const rounded = Math.round(widthM * 100) / 100;
-  return `${rounded}W`;
+  const value = String(widthM);
+  const trimmed = value.includes(".") ? value.replace(/\.?0+$/, "") : value;
+  return `${trimmed}W`;
 };
 
 const normalizeColourForPost = (colour: "White" | "Coloured"): string => {

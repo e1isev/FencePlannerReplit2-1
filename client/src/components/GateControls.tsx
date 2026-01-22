@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/store/appStore";
-import { getGateWidthRules } from "@/lib/gates/gateWidth";
+import { formatGateWidthM, getGateWidthRules } from "@/lib/gates/gateWidth";
 import { X } from "lucide-react";
 
 interface GateControlsProps {
@@ -23,7 +23,7 @@ export function GateControls({ gateId, onClose }: GateControlsProps) {
 
   useEffect(() => {
     if (!gate) return;
-    setDraftValue((gate.opening_mm / 1000).toFixed(2));
+    setDraftValue(formatGateWidthM(gate.opening_mm / 1000));
     setError(null);
   }, [gate?.id, gate?.opening_mm]);
 
@@ -34,19 +34,19 @@ export function GateControls({ gateId, onClose }: GateControlsProps) {
   const commitNumeric = (value: string) => {
     const numeric = Number(value.trim());
     if (!Number.isFinite(numeric)) {
-      setDraftValue((gate.opening_mm / 1000).toFixed(2));
+      setDraftValue(formatGateWidthM(gate.opening_mm / 1000));
       setError("Enter a valid number.");
       return;
     }
 
-    const result = updateGateWidth(gate.id, Math.round(numeric * 1000));
+    const result = updateGateWidth(gate.id, numeric * 1000);
     if (!result.ok) {
-      setDraftValue((gate.opening_mm / 1000).toFixed(2));
+      setDraftValue(formatGateWidthM(gate.opening_mm / 1000));
       setError(result.error ?? "Unable to update gate width.");
       return;
     }
 
-    setDraftValue((result.widthMm / 1000).toFixed(2));
+    setDraftValue(formatGateWidthM(result.widthMm / 1000));
     setError(null);
   };
 
@@ -82,7 +82,7 @@ export function GateControls({ gateId, onClose }: GateControlsProps) {
           onKeyDown={(e) => {
             if (e.key === "Enter") commitNumeric(draftValue);
             if (e.key === "Escape") {
-              setDraftValue((gate.opening_mm / 1000).toFixed(2));
+              setDraftValue(formatGateWidthM(gate.opening_mm / 1000));
               setError(null);
             }
           }}

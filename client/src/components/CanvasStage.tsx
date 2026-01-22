@@ -818,6 +818,9 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
 
   const handleLabelPointerDown = (e: any) => {
     e.cancelBubble = true;
+    if (e.evt?.preventDefault) {
+      e.evt.preventDefault();
+    }
   };
 
   const handleLineClick = (lineId: string, e: any) => {

@@ -561,6 +561,7 @@ export function MapOverlay({
   const { suggestions, isLoading: isSearchLoading, error: searchError } =
     useAddressAutocomplete(query, mapCenterValue);
   const moveEndHandlerRef = useRef<((this: maplibregl.Map, ev: any) => void) | null>(null);
+  const satelliteWarningTimeoutRef = useRef<number | null>(null);
 
   const providerOrderRef = useRef<SatelliteProvider[]>(PROVIDER_ORDER);
   const mapModeRef = useRef<MapStyleMode>(mapMode);
@@ -721,6 +722,27 @@ export function MapOverlay({
   useEffect(() => {
     mapModeRef.current = mapMode;
   }, [mapMode]);
+
+  useEffect(() => {
+    if (satelliteWarningTimeoutRef.current) {
+      window.clearTimeout(satelliteWarningTimeoutRef.current);
+      satelliteWarningTimeoutRef.current = null;
+    }
+
+    if (!satelliteWarning) return;
+
+    satelliteWarningTimeoutRef.current = window.setTimeout(() => {
+      setSatelliteWarning(null);
+      satelliteWarningTimeoutRef.current = null;
+    }, 15000);
+
+    return () => {
+      if (satelliteWarningTimeoutRef.current) {
+        window.clearTimeout(satelliteWarningTimeoutRef.current);
+        satelliteWarningTimeoutRef.current = null;
+      }
+    };
+  }, [satelliteWarning]);
 
   useEffect(() => {
     providerOrderRef.current = providerOrder;
