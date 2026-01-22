@@ -105,6 +105,21 @@ const PROVIDER_ORDER: SatelliteProvider[] = (() => {
   return base;
 })();
 
+function resolveProviderOrder(options: {
+  allowNearmap: boolean;
+  preferredProvider?: SatelliteProvider | null;
+}) {
+  const base: SatelliteProvider[] = ["nearmap", "maptiler", "esri"];
+  const filtered = options.allowNearmap ? base : base.filter((provider) => provider !== "nearmap");
+  const preferred = options.preferredProvider;
+
+  if (preferred && filtered.includes(preferred)) {
+    return [preferred, ...filtered.filter((provider) => provider !== preferred)];
+  }
+
+  return filtered;
+}
+
 type SatelliteSourceConfig = {
   tiles: string[];
   tileSize: number;
@@ -527,6 +542,7 @@ export function MapOverlay({
   const [mapCenter, setMapCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [mapMode, setMapMode] = useState<MapStyleMode>("satellite");
   const [satelliteProvider, setSatelliteProvider] = useState<SatelliteProvider>("esri");
+  const [providerOrder, setProviderOrder] = useState<SatelliteProvider[]>(PROVIDER_ORDER);
   const [satelliteWarning, setSatelliteWarning] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -712,9 +728,51 @@ export function MapOverlay({
   }, [mapMode]);
 
   useEffect(() => {
+    providerOrderRef.current = providerOrder;
+  }, [providerOrder]);
+
+  useEffect(() => {
     satelliteProviderRef.current = satelliteProvider;
     providerServerErrorsRef.current[satelliteProvider] = 0;
   }, [satelliteProvider]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkNearmapAvailability = async () => {
+      let allowNearmap = true;
+
+      try {
+        const response = await fetch("/api/nearmap/health", { cache: "no-store" });
+        allowNearmap = response.ok;
+      } catch (error) {
+        console.warn("[MapOverlay] Failed to reach Nearmap health endpoint", error);
+        allowNearmap = false;
+      }
+
+      if (cancelled) return;
+
+      const preferredProvider = SATELLITE_PROVIDER_ENV ?? null;
+      if (!allowNearmap && preferredProvider === "nearmap") {
+        setSatelliteWarning(
+          "Nearmap is configured as the preferred provider, but the server API key is missing."
+        );
+      }
+
+      setProviderOrder(
+        resolveProviderOrder({
+          allowNearmap,
+          preferredProvider,
+        })
+      );
+    };
+
+    checkNearmapAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     onMapModeChange?.(mapMode);
@@ -747,6 +805,12 @@ export function MapOverlay({
       setSatelliteWarning(null);
     }
   }, [ensureSatelliteProvider, mapMode]);
+
+  useEffect(() => {
+    if (mapMode === "satellite") {
+      ensureSatelliteProvider();
+    }
+  }, [ensureSatelliteProvider, mapMode, providerOrder]);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
