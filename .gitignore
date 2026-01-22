@@ -7,4 +7,6 @@ vite.config.ts.*
 data/
 !server/data/
 !server/data/pricingCatalogSeed.json
+!client/src/data/
+!client/src/data/**
 *.db
