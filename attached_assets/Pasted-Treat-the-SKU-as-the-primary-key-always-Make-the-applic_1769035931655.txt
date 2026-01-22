@@ -1,0 +1,187 @@
+Treat the SKU as the primary key, always
+
+Make the application generate, or choose, the correct SKU deterministically from the user’s selections
+
+Use the sheet only to translate SKU to price, plus optional human readable name for display and auditing
+
+If you do that, you never “search by name”, you never do fuzzy matching, and you avoid the missing prices chaos.
+
+1) Separate “what the customer picked” from “how it is priced”
+
+Your planner should produce a structured internal line item, independent of SKU.
+
+Example internal line item object:
+
+category, panel
+
+range, residential
+
+style, bellbrae
+
+height_m, 1.4
+
+colour, white
+
+quantity, 6
+
+For a gate:
+
+category, gate
+
+gate_type, single
+
+style, mesh
+
+height_m, 1.2
+
+colour, colour
+
+width_m, 1.5
+
+quantity, 1
+
+This internal representation is the “truth” of what was designed. Pricing is a second step.
+
+2) Deterministic SKU resolution, not text lookup
+
+With the sheet unchanged, you have two realistic options, both professional, pick one and stick to it.
+
+Option A, SKU builder, preferred
+
+Your code builds the SKU string from the structured selection using templates, then looks it up in the catalogue map.
+
+Example templates, similar to what you already use:
+
+Panels
+{StyleToken}-{ColourToken}-{HeightToken}
+Example Bellbrae-White-1.4m
+
+Posts
+ResPost-{PostKind}-{ColourToken}-{HeightToken}
+Example ResPost-End-Wht-1.4m
+
+Gates
+TLGATE-{StyleToken}-{GateType}-{WidthToken}
+Example TLGATE-3R-Single-1.5m
+
+Then the pricing step is trivial:
+
+Build SKU
+
+Look up SKU in the sheet derived map { sku -> unit_price }
+
+If missing, raise a resolver error with context, do not guess
+
+This approach is fast, testable, and scales.
+
+Option B, Catalogue search with strict rules
+
+If you cannot reliably build SKUs, you can search the sheet by product name, but only if you enforce a strict naming convention and use strict parsing, not “contains” searching. This is less robust long term, and you will spend time fixing edge cases.
+
+If you keep the sheet as is, I strongly recommend Option A, because it makes the sheet a pure price book keyed by SKU.
+
+3) Make SKU formats the contract, even if the sheet stays the same
+
+You are not changing sheet structure, but you should treat SKU format as an API contract.
+
+That means, for each category, define:
+
+Required tokens
+
+Allowed values per token
+
+Normalisation rules, case, spaces, abbreviations
+
+Versioning policy if you ever need to rename
+
+Example normalisation rules that prevent silent mismatches:
+
+Style tokens are canonical, Crossbuck, not cross buck
+
+Colour tokens are canonical, Wht and Col, or White and Colour, pick one
+
+Heights use 1.4m formatting, not 1.40 or 1400mm
+
+Widths use a consistent precision, for example 4.7m, not 4.70m sometimes
+
+With that, your resolver can generate SKUs that actually exist.
+
+4) Build a catalogue index once, then only do O(1) lookups
+
+Professional software does not keep calling Sheets for every price.
+
+Pipeline:
+
+Server reads the sheet on a schedule, for example every 5 minutes, or on demand with caching
+
+Server validates it, duplicates, missing SKU, non numeric price, inactive rows if you use an “inactive” naming convention
+
+Server builds an in memory map
+priceBySku: Map<string, number>
+also optionally
+nameBySku: Map<string, string>
+
+Client requests the compiled catalogue once per session, or requests only a version hash then pulls if changed
+
+Then pricing is instant and stable.
+
+5) Drive UI options from the catalogue, even without extra columns
+
+Even if the sheet has only name, SKU, price, you can still derive available options by parsing the SKU pattern.
+
+Example:
+
+Extract heights for panels by scanning SKUs that match ^Bellbrae- and reading the 1.4m token
+
+Extract available gate widths by scanning ^TLGATE-Crossbuck-Double- and listing the widths present
+
+Extract available colours by scanning for Wht or Col tokens
+
+This is why consistent SKU formatting matters. The sheet remains unchanged, but the catalogue becomes queryable.
+
+6) How to handle gate widths professionally
+
+Your UI lets users type any width, but your catalogue probably only has discrete SKUs.
+
+You need an explicit width mapping rule per gate type:
+
+Clamp to allowed range, per your spec
+
+Snap to the nearest available width SKU, or round up only, depending on how you manufacture
+
+Return both values to the user
+Requested width, 4.55m
+Priced width, 4.7m
+This prevents surprises and disputes.
+
+If you want “only widths that exist”, then do not allow free entry, render a dropdown of widths derived from the catalogue.
+
+7) Validation and “catalogue linting” is mandatory
+
+Because the sheet is the truth, your system must protect itself from bad edits.
+
+A catalogue linter should run on every import and report:
+
+Duplicate SKUs
+
+SKUs that do not match expected patterns
+
+Missing or non numeric prices
+
+Rows with suspicious naming, like unexpected height formatting
+
+Orphan SKUs, never referenced by any resolver rule
+
+This is what keeps “the sheet is the truth” workable in production.
+
+8) The practical model you want in your fence planner
+
+Given your current setup, the clean professional approach is:
+
+Your geometry produces normalised line items, category, style, height, colour, gate type, width, quantities
+
+A single resolver converts each line item to a SKU using templates and token maps
+
+Prices are fetched by SKU from the sheet derived map
+
+Every missing SKU is an actionable error that tells you exactly which selection produced it
