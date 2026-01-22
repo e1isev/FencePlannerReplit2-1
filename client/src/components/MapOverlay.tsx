@@ -703,8 +703,8 @@ export function MapOverlay({
       setSatelliteProvider("esri");
       setSatelliteWarning(
         warning
-          ? `${warning} Using Esri imagery as a fallback.`
-          : "Using Esri imagery as a fallback."
+          ? `${warning} Falling back to Esri imagery.`
+          : "Falling back to Esri imagery."
       );
     },
     [getTileCoordForCurrentView, isProviderUsable]
