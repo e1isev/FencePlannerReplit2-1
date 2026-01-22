@@ -552,11 +552,6 @@ export function MapOverlay({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isMapReady, setIsMapReady] = useState(false);
   const [webGLError, setWebGLError] = useState<string | null>(null);
-  const [tileFailures, setTileFailures] = useState<Record<SatelliteProvider, number>>({
-    nearmap: 0,
-    maptiler: 0,
-    esri: 0,
-  });
   const storedViewport = useMapViewportStore((state) => state.viewport);
   const setStoredViewport = useMapViewportStore((state) => state.setViewport);
   const mapCenterValue = useMemo(
@@ -630,10 +625,6 @@ export function MapOverlay({
         });
       }
 
-      setTileFailures((prev) => ({
-        ...prev,
-        [details.provider]: (prev[details.provider] ?? 0) + 1,
-      }));
     },
     []
   );
@@ -1408,18 +1399,6 @@ export function MapOverlay({
           "absolute inset-0 transition-opacity opacity-90 pointer-events-none bg-[#eaf2ff]"
         )}
       />
-
-      {showControls && isDevEnvironment() && (
-        <div className="absolute top-4 right-4 z-50 text-xs bg-white/85 backdrop-blur rounded-md shadow px-3 py-2 pointer-events-none space-y-1">
-          <p className="font-semibold">Tile failures</p>
-          {(Object.keys(tileFailures) as SatelliteProvider[]).map((provider) => (
-            <p key={provider} className="flex items-center gap-2">
-              <span className="min-w-[72px] text-slate-600">{providerLabel(provider)}:</span>
-              <span className="tabular-nums text-slate-900">{tileFailures[provider]}</span>
-            </p>
-          ))}
-        </div>
-      )}
 
       {/* Search and controls, on top and clickable */}
       {showControls && (

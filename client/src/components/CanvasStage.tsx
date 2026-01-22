@@ -20,7 +20,7 @@ import { calculateMetersPerPixel } from "@/lib/mapScale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PostShape } from "./PostShape";
-import { getJunctionAngleDegForPost, getPostAngleDeg, getPostNeighbours } from "@/geometry/posts";
+import { getPostAngleDeg, getPostNeighbours } from "@/geometry/posts";
 import { distanceMetersProjected } from "@/lib/geo";
 
 const BASE_MAP_ZOOM = 15;
@@ -89,8 +89,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const [startSnap, setStartSnap] = useState<SnapTarget | null>(null);
   const [currentSnap, setCurrentSnap] = useState<SnapTarget | null>(null);
   const [hoverSnap, setHoverSnap] = useState<SnapTarget | null>(null);
-  const [showSnapDebug, setShowSnapDebug] = useState(false);
-  const [showPostAngleDebug, setShowPostAngleDebug] = useState(false);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [labelUnit, setLabelUnit] = useState<"mm" | "m">("mm");
@@ -105,7 +103,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const pointerDownScreenRef = useRef<ScreenPoint | null>(null);
   const didDragRef = useRef(false);
   const mapRef = useRef<MaplibreMap | null>(null);
-  const isDev = import.meta.env.DEV;
 
   const lines = useAppStore((state) => state.lines);
   const posts = useAppStore((state) => state.posts);
@@ -310,17 +307,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
     setMmPerPixel,
   ]);
 
-  useEffect(() => {
-    const handleKeyToggle = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === "d") {
-        setShowSnapDebug((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyToggle);
-    return () => window.removeEventListener("keydown", handleKeyToggle);
-  }, []);
-
   const handleWheel = (e: any) => {
     e.evt.preventDefault();
     const zoomStep = 0.25;
@@ -336,7 +322,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const segmentSnapTolPx = Math.min(snapTolerance, SEGMENT_SNAP_SCREEN_MAX_PX);
   const dragThresholdPx = DRAG_THRESHOLD_PX;
   const lineHitStrokeWidth = Math.max(MIN_LINE_HIT_PX, 1);
-  const snapToleranceScreenPx = snapTolerance;
   const previewStrokeWidth = mmToPx(FENCE_THICKNESS_MM);
   const previewDashLength = mmToPx(FENCE_THICKNESS_MM);
 
@@ -1172,9 +1157,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
             {screenPosts.map((post) => {
               const neighbours = getPostNeighbours(post.pos, lines);
               const angleDeg = getPostAngleDeg(post.pos, neighbours, lines, post.category);
-              const junctionAngle = showPostAngleDebug
-                ? getJunctionAngleDegForPost(post.pos, lines)
-                : null;
+              const junctionAngle = null;
 
               return (
                 <Group key={post.id}>
@@ -1250,76 +1233,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
               <span>Scale: —</span>
             )}
           </div>
-        </div>
-      )}
-
-      {!isReadOnly && isDev && (
-        <div className="absolute bottom-3 left-3 z-30 flex flex-col gap-2 items-start">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSnapDebug((prev) => !prev)}
-            className="shadow"
-          >
-            {showSnapDebug ? "Hide snap debug" : "Show snap debug"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowPostAngleDebug((prev) => !prev)}
-            className="shadow"
-          >
-            {showPostAngleDebug ? "Hide post angles" : "Show post angles"}
-          </Button>
-          {showSnapDebug && (
-            <div className="text-xs bg-white/90 backdrop-blur rounded-md shadow px-3 py-2 border border-slate-200">
-              <p className="font-semibold text-slate-700">Snap</p>
-              <p className="font-mono text-slate-600">{hoverSnap ? hoverSnap.type : "none"}</p>
-              <p className="text-[0.7rem] text-slate-500">Press "d" to toggle</p>
-              <div className="mt-1 space-y-0.5 font-mono text-slate-600">
-                <p>Zoom: {mapZoom.toFixed(2)}</p>
-                <p>Snap (px): {snapTolerance.toFixed(2)}</p>
-                <p>Snap (screen px): {snapToleranceScreenPx.toFixed(2)}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!isReadOnly && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
-          <Card className="px-4 py-3 shadow-lg flex items-center gap-3">
-            <div className="text-sm">
-              <p className="font-semibold">Calibration</p>
-              <p className="text-xs text-slate-500">
-                {isCalibrating
-                  ? (() => {
-                      const remaining = 2 - calibrationPoints.length;
-                      return `Select ${remaining} point${remaining === 1 ? "" : "s"} 10 yards apart`;
-                    })()
-                  : `Scale: ${FIXED_SCALE_METERS_PER_PIXEL.toFixed(3)} m/px${
-                      calibrationFactor !== 1 ? " (calibrated)" : ""
-                    }`}
-              </p>
-            </div>
-            <Button
-              variant={isCalibrating ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                if (isCalibrating) {
-                  setIsCalibrating(false);
-                  setCalibrationPoints([]);
-                } else {
-                  setIsCalibrating(true);
-                  setCalibrationPoints([]);
-                  setIsDrawing(false);
-                }
-              }}
-              data-testid="button-calibrate-scale"
-            >
-              {isCalibrating ? "Cancel" : "Calibrate"}
-            </Button>
-          </Card>
         </div>
       )}
 
