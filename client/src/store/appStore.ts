@@ -203,12 +203,18 @@ let recalcQueued = false;
 let isStabilizing = true;
 let recalcCallCount = 0;
 let circuitBroken = false;
+let recalcAfterStabilize: (() => void) | null = null;
 const recalcGuard = import.meta.env.DEV
   ? makeLoopGuard("appStore.queueRecalculate", 200, 20)
   : null;
 
 setTimeout(() => {
   isStabilizing = false;
+  if (recalcAfterStabilize) {
+    const pending = recalcAfterStabilize;
+    recalcAfterStabilize = null;
+    pending();
+  }
 }, 1000);
 
 const logQueueRecalculateCaller = () => {
@@ -230,7 +236,10 @@ const queueRecalculate = (
   if (import.meta.env.DEV) logQueueRecalculateCaller();
   recalcGuard?.();
   if (recalcQueued) return;
-  if (isStabilizing) return;
+  if (isStabilizing) {
+    recalcAfterStabilize = () => queueRecalculate(get, set);
+    return;
+  }
   recalcQueued = true;
 
   requestAnimationFrame(() => {
