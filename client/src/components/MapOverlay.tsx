@@ -44,7 +44,19 @@ const SATELLITE_PROVIDER_ENV =
     ? (process.env.VITE_SATELLITE_PROVIDER as SatelliteProvider | undefined)
     : undefined);
 
-if (!MAPTILER_API_KEY) {
+function isDevEnvironment() {
+  if (typeof import.meta !== "undefined" && "env" in import.meta) {
+    // @ts-ignore Vite injects env
+    return Boolean(import.meta.env?.DEV);
+  }
+  return process.env.NODE_ENV === "development";
+}
+
+if (
+  !MAPTILER_API_KEY &&
+  isDevEnvironment() &&
+  (SATELLITE_PROVIDER_ENV === "maptiler" || SATELLITE_PROVIDER_ENV === undefined)
+) {
   console.warn(
     "[MapOverlay] MAPTILER_API_KEY is not set. Falling back to Esri imagery when MapTiler is unavailable."
   );
@@ -201,14 +213,6 @@ async function isTileMostlyEmpty(blob: Blob): Promise<boolean> {
     console.warn("[MapOverlay] Failed to evaluate tile opacity", error);
     return false;
   }
-}
-
-function isDevEnvironment() {
-  if (typeof import.meta !== "undefined" && "env" in import.meta) {
-    // @ts-ignore Vite injects env
-    return Boolean(import.meta.env?.DEV);
-  }
-  return process.env.NODE_ENV === "development";
 }
 
 function logNearmapRejection(params: {
