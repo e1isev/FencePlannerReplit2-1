@@ -1173,7 +1173,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
             {screenPosts.map((post) => {
               const neighbours = getPostNeighbours(post.pos, lines);
               const angleDeg = getPostAngleDeg(post.pos, neighbours, lines, post.category);
-              const junctionAngle = null;
 
               return (
                 <Group key={post.id}>
@@ -1185,16 +1184,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
                     angleDeg={angleDeg}
                     isSatelliteMode={mapMode === "satellite"}
                   />
-                  {junctionAngle !== null && (
-                    <Text
-                      x={post.screenPos.x + 8}
-                      y={post.screenPos.y - 18}
-                      text={`${junctionAngle.toFixed(1)}°`}
-                      fontSize={12}
-                      fill={mapMode === "satellite" ? "#0f172a" : "#1e293b"}
-                      listening={false}
-                    />
-                  )}
                 </Group>
               );
             })}
