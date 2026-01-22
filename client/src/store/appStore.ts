@@ -1061,7 +1061,7 @@ export const useAppStore = create<AppState>()(
         const lineOrder = new Map(existingLines.map((line, index) => [line.id, index]));
 
         const targetLine = existingLines.find((l) => l.id === id);
-        if (!targetLine || targetLine.gateId) return;
+        if (!targetLine) return;
         
         const currentLength = distanceMetersProjected(targetLine.a, targetLine.b);
         if (currentLength === 0) return;
