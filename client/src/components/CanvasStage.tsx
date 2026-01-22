@@ -791,6 +791,11 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
     e.cancelBubble = true;
     const line = lines.find((l) => l.id === lineId);
     if (line) {
+      if (line.gateId) {
+        setSelectedGateId(line.gateId as string);
+        setSelectedLineId(null);
+        return;
+      }
       if (selectedGateType && !line.gateId) {
         const stage = e.target.getStage();
         const rect = stage.container().getBoundingClientRect();
@@ -1001,6 +1006,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
               const isGate = !!line.gateId;
               const isSelected = line.id === selectedLineId;
               const isGateSelected = Boolean(line.gateId && line.gateId === selectedGateId);
+              const gate = line.gateId ? gates.find((item) => item.id === line.gateId) : undefined;
 
               const isInteractive = !isGate && !isReadOnly;
               const isGateInteractive = isGate && !isReadOnly && !selectedGateType;
@@ -1096,7 +1102,8 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
                     const labelX = midX + nx * labelOffset;
                     const labelY = midY + ny * labelOffset;
 
-                    const text = `${(line.length_mm / 1000).toFixed(2)}m`;
+                    const labelLengthMm = gate?.opening_mm ?? line.length_mm;
+                    const text = `${(labelLengthMm / 1000).toFixed(2)}m`;
                     const fontSize = 12;
                     const padding = 4;
                     const estimatedWidth = text.length * fontSize * 0.6 + padding * 2;
