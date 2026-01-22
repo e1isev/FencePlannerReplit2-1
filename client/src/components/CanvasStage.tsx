@@ -34,6 +34,9 @@ const SNAP_SCREEN_MAX_PX = 40;
 const SEGMENT_SNAP_SCREEN_MAX_PX = 20;
 const MAP_MODE_STORAGE_KEY = "fpr2.mapMode";
 const MAP_STYLE_MODES = ["street", "satellite"] as const;
+const ENDPOINT_WELD_EPS_MM = 60;
+
+const mmToMeters = (mm: number) => mm / 1000;
 
 function isMapStyleMode(value: string): value is (typeof MAP_STYLE_MODES)[number] {
   return (MAP_STYLE_MODES as readonly string[]).includes(value);
@@ -905,8 +908,22 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
     setEditError(null);
 
     queueMicrotask(() => {
+      const targetLine = lines.find((line) => line.id === targetLineId);
+      const gateToleranceMeters = mmToMeters(ENDPOINT_WELD_EPS_MM);
+      const isGateEndpoint = (point: Point) =>
+        lines.some(
+          (line) =>
+            line.gateId &&
+            line.id !== targetLineId &&
+            (distanceMetersProjected(line.a, point) <= gateToleranceMeters ||
+              distanceMetersProjected(line.b, point) <= gateToleranceMeters)
+        );
+      const gateAtA = targetLine ? isGateEndpoint(targetLine.a) : false;
+      const gateAtB = targetLine ? isGateEndpoint(targetLine.b) : false;
+      const fromEnd = gateAtB && !gateAtA ? "a" : "b";
+
       try {
-        updateLine(targetLineId, mm, "b", { allowMerge: false });
+        updateLine(targetLineId, mm, fromEnd, { allowMerge: false });
         const latestLines = useAppStore.getState().lines;
         const stillExists = latestLines.some((line) => line.id === targetLineId);
         if (!stillExists) {
