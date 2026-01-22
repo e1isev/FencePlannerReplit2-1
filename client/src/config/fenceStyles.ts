@@ -1,6 +1,8 @@
 import { FenceCategoryId, FenceStyleId } from "@/types/models";
 import { getStylesByCategory } from "@/data/fenceStyles";
 
+export { getStylesByCategory };
+
 export type FenceStyle = {
   id: FenceStyleId;
   label: string;
