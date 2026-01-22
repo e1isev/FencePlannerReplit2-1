@@ -54,6 +54,13 @@ type ProjectSessionState = {
 const DEFAULT_DEPENDENCIES = { catalogVersion: "unknown", ruleSetVersion: "unknown" };
 const persistedState = readPersistedProjects();
 
+const createLocalId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `local-${crypto.randomUUID()}`;
+  }
+  return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 export const getActiveProject = (state: ProjectSessionState): LocalProject | null => {
   if (!state.activeProjectId) return null;
   return state.projectsById[state.activeProjectId] ?? null;
@@ -136,7 +143,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
   startNewProject: (projectType, name) => {
     const dependencies = get().dependencies;
     const nowIso = new Date().toISOString();
-    const localId = `local-${crypto.randomUUID()}`;
+    const localId = createLocalId();
     initializePlannerState(projectType);
     const snapshot = buildPlannerSnapshot(projectType, name, dependencies);
     const projectRecord = buildLocalProject(snapshot, name, localId, nowIso);
@@ -286,7 +293,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
     const authUser = useAuthStore.getState().user;
 
     if (!authUser) {
-      const resolvedLocalId = localId ?? `local-${crypto.randomUUID()}`;
+      const resolvedLocalId = localId ?? createLocalId();
       if (resolvedLocalId !== localId) {
         const updatedAt = new Date().toISOString();
         const nextProjects = {
