@@ -10,6 +10,7 @@ import {
   PanelSegment,
   Point,
   Post,
+  PostSpan,
   ProductKind,
   WarningMsg,
 } from "@/types/models";
@@ -25,6 +26,7 @@ import { FENCE_HEIGHTS_M } from "@/config/fenceHeights";
 import { generateId } from "@/lib/ids";
 import { DEFAULT_POINT_QUANTIZE_STEP_MM, quantizePointMm } from "@/geometry/coordinates";
 import { generatePosts } from "@/geometry/posts";
+import { derivePostSpans } from "@/geometry/postSpans";
 import { fitPanels, MIN_LEFTOVER_MM, PANEL_LENGTH_MM } from "@/geometry/panels";
 import { validateSlidingReturn } from "@/geometry/gates";
 import { MIN_LINE_LENGTH_MM } from "@/constants/geometry";
@@ -75,6 +77,7 @@ type DerivedState = {
   leftovers: Leftover[];
   warnings: WarningMsg[];
   panelPositionsMap: Map<string, number[]>;
+  postSpans: PostSpan[];
 };
 
 const normalizeMmPerPixel = (value: number) => {
@@ -167,6 +170,8 @@ const recalculateDerived = (state: CanonicalState, now: number): DerivedState =>
     console.timeEnd("generatePosts");
   }
 
+  const { spans: postSpans } = derivePostSpans(lines, posts);
+
   const tJunctions = posts.filter((post) => post.category === "t");
 
   tJunctions.forEach((post) => {
@@ -196,6 +201,7 @@ const recalculateDerived = (state: CanonicalState, now: number): DerivedState =>
     leftovers: allNewLeftovers,
     warnings: allWarnings,
     panelPositionsMap,
+    postSpans,
   };
 };
 
@@ -279,6 +285,7 @@ type FencingPlannerSnapshotState = {
   gates?: Gate[];
   panels?: PanelSegment[];
   posts?: Post[];
+  postSpans?: PostSpan[];
   leftovers?: Leftover[];
   warnings?: WarningMsg[];
   panelPositionsMap?: Record<string, number[]>;
@@ -761,6 +768,7 @@ interface AppState {
   fenceCategoryId: FenceCategoryId;
   lines: FenceLine[];
   posts: Post[];
+  postSpans: PostSpan[];
   gates: Gate[];
   panels: PanelSegment[];
   leftovers: Leftover[];
@@ -831,6 +839,7 @@ export const useAppStore = create<AppState>()(
       fenceCategoryId: "residential",
       lines: [],
       posts: [],
+      postSpans: [],
       gates: [],
       panels: [],
       leftovers: [],
@@ -1500,6 +1509,7 @@ export const useAppStore = create<AppState>()(
         set({
           lines: [],
           posts: [],
+          postSpans: [],
           gates: [],
           panels: [],
           leftovers: [],
@@ -1523,6 +1533,7 @@ export const useAppStore = create<AppState>()(
           fenceCategoryId: "residential",
           lines: [],
           posts: [],
+          postSpans: [],
           gates: [],
           panels: [],
           leftovers: [],
@@ -1578,6 +1589,7 @@ export const useAppStore = create<AppState>()(
           gates: normalizedGates,
           panels: state.panels ?? [],
           posts: state.posts ?? [],
+          postSpans: state.postSpans ?? [],
           leftovers: state.leftovers ?? [],
           warnings: state.warnings ?? [],
           panelPositionsMap: map,

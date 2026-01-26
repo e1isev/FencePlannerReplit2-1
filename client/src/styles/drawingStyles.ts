@@ -1,0 +1,16 @@
+export const DRAWING_STYLES = {
+  fenceLineStrokePx: 4,
+  fenceLineOutlinePx: 8,
+  fenceLineShadowBlurPx: 4,
+  postSizePx: 14,
+  postCornerRadiusPx: 4,
+  postStrokeWidthPx: 2,
+  postShadowBlurPx: 4,
+  dimensionLineWidthPx: 2,
+  dimensionTickLengthPx: 8,
+  dimensionOffsetPx: 18,
+  dimensionLabelOffsetPx: 10,
+  dimensionTextSizePx: 12,
+  dimensionLabelPaddingPx: 4,
+  labelOffsetPx: 16,
+} as const;

@@ -99,6 +99,13 @@ export interface Post {
   source: "vertex" | "panel";
 }
 
+export interface PostSpan {
+  id: string;
+  fromPostId: string;
+  toPostId: string;
+  lengthM: number;
+}
+
 export interface Gate {
   id: string;
   type: GateType;
