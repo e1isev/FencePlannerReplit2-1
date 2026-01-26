@@ -97,6 +97,35 @@ export default function DrawingPage() {
   }));
 
   const postById = new Map(posts.map((post) => [post.id, post]));
+  const orderedPostIndexMap = new Map(
+    orderedPosts.map((entry, index) => [entry.post.id, index])
+  );
+
+  const getPostAngleDeg = (postId: string) => {
+    if (orderedPosts.length < 2) return 0;
+    const index = orderedPostIndexMap.get(postId);
+    if (index === undefined) return 0;
+
+    const isLast = index === orderedPosts.length - 1;
+    const fromPost = isLast ? orderedPosts[index - 1] : orderedPosts[index];
+    const toPost = isLast ? orderedPosts[index] : orderedPosts[index + 1];
+
+    if (!fromPost || !toPost) return 0;
+
+    const from = transform(fromPost.post.pos);
+    const to = transform(toPost.post.pos);
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    if (Math.hypot(dx, dy) < 1e-6) {
+      console.debug("Post rotation warning: coincident posts detected.", {
+        postId,
+        fromPostId: fromPost.post.id,
+        toPostId: toPost.post.id,
+      });
+      return 0;
+    }
+    return (Math.atan2(dy, dx) * 180) / Math.PI;
+  };
 
   return (
     <div className="min-h-screen bg-white" data-testid="page-drawing">
