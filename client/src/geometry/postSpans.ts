@@ -1,9 +1,10 @@
 import type { FenceLine, Point, Post } from "@/types/models";
 import { distanceMetersProjected, lngLatToMercatorMeters } from "@/lib/geo";
 import { generateId } from "@/lib/ids";
-import { getPostAngleDeg, getPostNeighbours } from "@/geometry/posts";
 
 const POINT_KEY_PRECISION = 6;
+
+const radToDeg = (radians: number) => (radians * 180) / Math.PI;
 
 const pointKey = (point: Point) =>
   `${point.x.toFixed(POINT_KEY_PRECISION)},${point.y.toFixed(POINT_KEY_PRECISION)}`;
@@ -66,13 +67,33 @@ const angleBetweenPointsRad = (from: Point, to: Point): number | null => {
   return Math.atan2(dy, dx);
 };
 
-export const buildPostAngleMap = (orderedPosts: OrderedPostStation[], lines: FenceLine[]) => {
+export const buildPostAngleMap = (orderedPosts: OrderedPostStation[], _lines: FenceLine[]) => {
   const angles: Record<string, number> = {};
   if (orderedPosts.length === 0) return angles;
 
-  orderedPosts.forEach((entry) => {
-    const neighbours = getPostNeighbours(entry.post.pos, lines);
-    angles[entry.post.id] = getPostAngleDeg(entry.post.pos, neighbours, lines, entry.post.category);
+  const toMeters = (point: Point) => lngLatToMercatorMeters(point);
+
+  orderedPosts.forEach((entry, index) => {
+    if (orderedPosts.length === 1) {
+      angles[entry.post.id] = 0;
+      return;
+    }
+
+    const currentMeters = toMeters(entry.post.pos);
+    let dx = 0;
+    let dy = 0;
+
+    if (index < orderedPosts.length - 1) {
+      const nextMeters = toMeters(orderedPosts[index + 1].post.pos);
+      dx = nextMeters.x - currentMeters.x;
+      dy = nextMeters.y - currentMeters.y;
+    } else {
+      const prevMeters = toMeters(orderedPosts[index - 1].post.pos);
+      dx = currentMeters.x - prevMeters.x;
+      dy = currentMeters.y - prevMeters.y;
+    }
+
+    angles[entry.post.id] = radToDeg(Math.atan2(dy, dx));
   });
 
   return angles;
