@@ -1,6 +1,14 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { FenceLine, Post, Gate, PanelSegment, FenceColourMode, FenceCategoryId } from "@/types/models";
+import {
+  FenceLine,
+  Post,
+  Gate,
+  PanelSegment,
+  FenceColourMode,
+  FenceCategoryId,
+  PostSpan,
+} from "@/types/models";
 import { FenceStyleId } from "@/types/models";
 import { calculateCosts } from "./pricing";
 import { getFenceStyleLabel } from "@/config/fenceStyles";
@@ -13,6 +21,7 @@ export function exportCuttingListCSV(args: {
   fenceColourMode: FenceColourMode;
   panels: PanelSegment[];
   posts: Post[];
+  postSpans: PostSpan[];
   gates: Gate[];
   lines: FenceLine[];
 }): void {
@@ -25,6 +34,7 @@ export function exportCuttingListCSV(args: {
     posts,
     gates,
     lines,
+    postSpans,
   } = args;
   const residentialIndex = usePricingStore.getState().residentialIndex;
   const costs = calculateCosts({
@@ -58,6 +68,34 @@ export function exportCuttingListCSV(args: {
     "",
     costs.grandTotal === null ? "" : `$${costs.grandTotal.toFixed(2)}`,
   ]);
+
+  if (postSpans.length > 0) {
+    rows.push([]);
+    rows.push(["Post Spacings"]);
+    rows.push([
+      "Span",
+      "From",
+      "To",
+      "Length (m)",
+      "Cumulative start (m)",
+      "Cumulative end (m)",
+      "Notes",
+    ]);
+
+    postSpans.forEach((span) => {
+      const fromRef = span.fromIndex ? span.fromIndex.toString() : span.fromPostId;
+      const toRef = span.toIndex ? span.toIndex.toString() : span.toPostId;
+      rows.push([
+        span.index.toString(),
+        fromRef,
+        toRef,
+        span.lengthM.toFixed(2),
+        span.startStationM !== undefined ? span.startStationM.toFixed(2) : "",
+        span.endStationM !== undefined ? span.endStationM.toFixed(2) : "",
+        span.spanType ?? "",
+      ]);
+    });
+  }
   
   const csvContent = rows.map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
   

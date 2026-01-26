@@ -26,7 +26,7 @@ import { FENCE_HEIGHTS_M } from "@/config/fenceHeights";
 import { generateId } from "@/lib/ids";
 import { DEFAULT_POINT_QUANTIZE_STEP_MM, quantizePointMm } from "@/geometry/coordinates";
 import { generatePosts } from "@/geometry/posts";
-import { derivePostSpans } from "@/geometry/postSpans";
+import { buildPostAngleMap, derivePostSpans, type OrderedPostStation } from "@/geometry/postSpans";
 import { fitPanels, MIN_LEFTOVER_MM, PANEL_LENGTH_MM } from "@/geometry/panels";
 import { validateSlidingReturn } from "@/geometry/gates";
 import { MIN_LINE_LENGTH_MM } from "@/constants/geometry";
@@ -78,6 +78,8 @@ type DerivedState = {
   warnings: WarningMsg[];
   panelPositionsMap: Map<string, number[]>;
   postSpans: PostSpan[];
+  orderedPosts: OrderedPostStation[];
+  postAngles: Record<string, number>;
 };
 
 const normalizeMmPerPixel = (value: number) => {
@@ -170,7 +172,8 @@ const recalculateDerived = (state: CanonicalState, now: number): DerivedState =>
     console.timeEnd("generatePosts");
   }
 
-  const { spans: postSpans } = derivePostSpans(lines, posts);
+  const { spans: postSpans, orderedPosts } = derivePostSpans(lines, posts);
+  const postAngles = buildPostAngleMap(orderedPosts);
 
   const tJunctions = posts.filter((post) => post.category === "t");
 
@@ -202,6 +205,8 @@ const recalculateDerived = (state: CanonicalState, now: number): DerivedState =>
     warnings: allWarnings,
     panelPositionsMap,
     postSpans,
+    orderedPosts,
+    postAngles,
   };
 };
 
@@ -286,6 +291,8 @@ type FencingPlannerSnapshotState = {
   panels?: PanelSegment[];
   posts?: Post[];
   postSpans?: PostSpan[];
+  orderedPosts?: OrderedPostStation[];
+  postAngles?: Record<string, number>;
   leftovers?: Leftover[];
   warnings?: WarningMsg[];
   panelPositionsMap?: Record<string, number[]>;
@@ -769,6 +776,8 @@ interface AppState {
   lines: FenceLine[];
   posts: Post[];
   postSpans: PostSpan[];
+  orderedPosts: OrderedPostStation[];
+  postAngles: Record<string, number>;
   gates: Gate[];
   panels: PanelSegment[];
   leftovers: Leftover[];
@@ -840,6 +849,8 @@ export const useAppStore = create<AppState>()(
       lines: [],
       posts: [],
       postSpans: [],
+      orderedPosts: [],
+      postAngles: {},
       gates: [],
       panels: [],
       leftovers: [],
@@ -1510,6 +1521,8 @@ export const useAppStore = create<AppState>()(
           lines: [],
           posts: [],
           postSpans: [],
+          orderedPosts: [],
+          postAngles: {},
           gates: [],
           panels: [],
           leftovers: [],
@@ -1534,6 +1547,8 @@ export const useAppStore = create<AppState>()(
           lines: [],
           posts: [],
           postSpans: [],
+          orderedPosts: [],
+          postAngles: {},
           gates: [],
           panels: [],
           leftovers: [],
@@ -1590,6 +1605,8 @@ export const useAppStore = create<AppState>()(
           panels: state.panels ?? [],
           posts: state.posts ?? [],
           postSpans: state.postSpans ?? [],
+          orderedPosts: state.orderedPosts ?? [],
+          postAngles: state.postAngles ?? {},
           leftovers: state.leftovers ?? [],
           warnings: state.warnings ?? [],
           panelPositionsMap: map,

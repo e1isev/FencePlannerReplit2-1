@@ -101,9 +101,16 @@ export interface Post {
 
 export interface PostSpan {
   id: string;
+  index: number;
   fromPostId: string;
+  fromIndex?: number;
   toPostId: string;
+  toIndex?: number;
   lengthM: number;
+  startStationM?: number;
+  endStationM?: number;
+  angleRad?: number;
+  spanType?: string;
 }
 
 export interface Gate {

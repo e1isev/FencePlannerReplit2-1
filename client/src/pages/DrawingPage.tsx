@@ -9,7 +9,6 @@ import { useLocation } from "wouter";
 import { getSlidingReturnRect } from "@/geometry/gates";
 import { calculateCosts } from "@/lib/pricing";
 import { PostShape } from "@/components/PostShape";
-import { getPostAngleDeg, getPostNeighbours } from "@/geometry/posts";
 import { getFenceStyleLabel } from "@/config/fenceStyles";
 import { getFenceColourMode } from "@/config/fenceColors";
 import { countBoardsPurchased } from "@/geometry/panels";
@@ -20,6 +19,7 @@ export default function DrawingPage() {
   const lines = useAppStore((state) => state.lines);
   const posts = useAppStore((state) => state.posts);
   const postSpans = useAppStore((state) => state.postSpans);
+  const postAngles = useAppStore((state) => state.postAngles);
   const gates = useAppStore((state) => state.gates);
   const warnings = useAppStore((state) => state.warnings);
   const panels = useAppStore((state) => state.panels);
@@ -279,8 +279,7 @@ export default function DrawingPage() {
 
                 {posts.map((post) => {
                   const transformedPost = transform(post.pos);
-                  const neighbours = getPostNeighbours(post.pos, lines);
-                  const angleDeg = getPostAngleDeg(post.pos, neighbours, lines, post.category);
+                  const angleDeg = postAngles[post.id] ?? 0;
 
                   return (
                     <PostShape
