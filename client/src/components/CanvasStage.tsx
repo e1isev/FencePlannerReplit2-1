@@ -106,6 +106,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
 
   const lines = useAppStore((state) => state.lines);
   const posts = useAppStore((state) => state.posts);
+  const orderedPosts = useAppStore((state) => state.orderedPosts);
   const postAngles = useAppStore((state) => state.postAngles);
   const gates = useAppStore((state) => state.gates);
   const addLine = useAppStore((state) => state.addLine);
