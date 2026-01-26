@@ -54,6 +54,10 @@ export type PostSpan = {
   angleRad?: number;
 };
 
+const radToDeg = (radians: number) => (radians * 180) / Math.PI;
+
+const normaliseAngleDeg = (angle: number) => ((angle + 180) % 360 + 360) % 360 - 180;
+
 const angleBetweenPointsRad = (from: Point, to: Point): number | null => {
   const aMeters = lngLatToMercatorMeters(from);
   const bMeters = lngLatToMercatorMeters(to);
@@ -63,6 +67,38 @@ const angleBetweenPointsRad = (from: Point, to: Point): number | null => {
     return null;
   }
   return Math.atan2(dy, dx);
+};
+
+export const buildPostAngleMap = (orderedPosts: OrderedPostStation[]) => {
+  const angles: Record<string, number> = {};
+  const count = orderedPosts.length;
+  if (count === 0) return angles;
+
+  orderedPosts.forEach((entry, index) => {
+    if (count === 1) {
+      angles[entry.post.id] = 0;
+      return;
+    }
+
+    const isLast = index === count - 1;
+    const from = isLast ? orderedPosts[index - 1]!.post.pos : entry.post.pos;
+    const to = isLast ? entry.post.pos : orderedPosts[index + 1]!.post.pos;
+    const angleRad = angleBetweenPointsRad(from, to);
+
+    if (angleRad === null) {
+      console.debug("Post rotation warning: coincident posts detected.", {
+        postId: entry.post.id,
+        fromPostId: isLast ? orderedPosts[index - 1]!.post.id : entry.post.id,
+        toPostId: isLast ? entry.post.id : orderedPosts[index + 1]!.post.id,
+      });
+      angles[entry.post.id] = 0;
+      return;
+    }
+
+    angles[entry.post.id] = normaliseAngleDeg(radToDeg(angleRad));
+  });
+
+  return angles;
 };
 
 const buildOrderedSegments = (lines: FenceLine[]): OrderedSegment[] => {
