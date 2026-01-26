@@ -173,7 +173,7 @@ const recalculateDerived = (state: CanonicalState, now: number): DerivedState =>
   }
 
   const { spans: postSpans, orderedPosts } = derivePostSpans(lines, posts);
-  const postAngles = buildPostAngleMap(orderedPosts);
+  const postAngles = buildPostAngleMap(orderedPosts, lines);
 
   const tJunctions = posts.filter((post) => post.category === "t");
 
