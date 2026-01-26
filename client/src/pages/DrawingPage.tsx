@@ -10,15 +10,16 @@ import { getSlidingReturnRect } from "@/geometry/gates";
 import { calculateCosts } from "@/lib/pricing";
 import { PostShape } from "@/components/PostShape";
 import { getPostAngleDeg, getPostNeighbours } from "@/geometry/posts";
-import { FENCE_THICKNESS_MM } from "@/constants/geometry";
 import { getFenceStyleLabel } from "@/config/fenceStyles";
 import { getFenceColourMode } from "@/config/fenceColors";
 import { countBoardsPurchased } from "@/geometry/panels";
+import { DRAWING_STYLES } from "@/styles/drawingStyles";
 
 export default function DrawingPage() {
   const [, setLocation] = useLocation();
   const lines = useAppStore((state) => state.lines);
   const posts = useAppStore((state) => state.posts);
+  const postSpans = useAppStore((state) => state.postSpans);
   const gates = useAppStore((state) => state.gates);
   const warnings = useAppStore((state) => state.warnings);
   const panels = useAppStore((state) => state.panels);
@@ -79,8 +80,6 @@ export default function DrawingPage() {
   const offsetX = padding + (canvasWidth - 2 * padding - drawingWidth * drawingScale) / 2;
   const offsetY = padding + (canvasHeight - 2 * padding - drawingHeight * drawingScale) / 2;
 
-  const effectiveMmPerPixel = mmPerPixel ? mmPerPixel / drawingScale : 1;
-  const mmToPx = (mm: number) => (effectiveMmPerPixel > 0 ? mm / effectiveMmPerPixel : mm);
   const totalLengthMm = lines.reduce((sum, line) => sum + line.length_mm, 0);
   const totalPosts = posts.length;
   const totalPanels = countBoardsPurchased(panels);
@@ -96,6 +95,8 @@ export default function DrawingPage() {
     a: transform(line.a),
     b: transform(line.b),
   }));
+
+  const postById = new Map(posts.map((post) => [post.id, post]));
 
   return (
     <div className="min-h-screen bg-white" data-testid="page-drawing">
@@ -132,22 +133,26 @@ export default function DrawingPage() {
                   const isGate = !!line.gateId;
                   const a = line.a;
                   const b = line.b;
+                  const baseStrokeWidth = DRAWING_STYLES.fenceLineStrokePx;
+                  const outlineStrokeWidth = DRAWING_STYLES.fenceLineOutlinePx;
 
                   return (
                     <Group key={line.id}>
                       <Line
                         points={[a.x, a.y, b.x, b.y]}
-                        stroke={isGate ? "#f59e0b" : "#475569"}
-                        strokeWidth={mmToPx(FENCE_THICKNESS_MM)}
-                        opacity={isGate ? 0.9 : 1}
+                        stroke="#0f172a"
+                        strokeWidth={outlineStrokeWidth}
+                        opacity={isGate ? 0.85 : 0.9}
+                        listening={false}
                       />
-                      <Text
-                        x={(a.x + b.x) / 2 - 25}
-                        y={(a.y + b.y) / 2 - 20}
-                        text={`${(line.length_mm / 1000).toFixed(2)}m`}
-                        fontSize={10}
-                        fill="#1e293b"
-                        fontFamily="JetBrains Mono"
+                      <Line
+                        points={[a.x, a.y, b.x, b.y]}
+                        stroke={isGate ? "#f59e0b" : "#475569"}
+                        strokeWidth={baseStrokeWidth}
+                        opacity={isGate ? 0.95 : 1}
+                        shadowColor="rgba(15,23,42,0.35)"
+                        shadowBlur={DRAWING_STYLES.fenceLineShadowBlurPx}
+                        listening={false}
                       />
                       {isGate && (
                         <Text
@@ -163,9 +168,113 @@ export default function DrawingPage() {
                   );
                 })}
 
-                {lines.map((line) => {
-                  if (line.gateId) return null;
-                  return null;
+                {postSpans.map((span) => {
+                  const fromPost = postById.get(span.fromPostId);
+                  const toPost = postById.get(span.toPostId);
+                  if (!fromPost || !toPost) return null;
+
+                  const from = transform(fromPost.pos);
+                  const to = transform(toPost.pos);
+                  const dx = to.x - from.x;
+                  const dy = to.y - from.y;
+                  const length = Math.hypot(dx, dy);
+                  if (length === 0) return null;
+
+                  const nx = -dy / length;
+                  const ny = dx / length;
+
+                  const offset = DRAWING_STYLES.dimensionOffsetPx;
+                  const tick = DRAWING_STYLES.dimensionTickLengthPx;
+                  const labelOffset = DRAWING_STYLES.dimensionLabelOffsetPx;
+
+                  const lineStart = {
+                    x: from.x + nx * offset,
+                    y: from.y + ny * offset,
+                  };
+                  const lineEnd = {
+                    x: to.x + nx * offset,
+                    y: to.y + ny * offset,
+                  };
+
+                  const tickHalf = tick / 2;
+                  const tickStartA = {
+                    x: lineStart.x - nx * tickHalf,
+                    y: lineStart.y - ny * tickHalf,
+                  };
+                  const tickStartB = {
+                    x: lineStart.x + nx * tickHalf,
+                    y: lineStart.y + ny * tickHalf,
+                  };
+                  const tickEndA = {
+                    x: lineEnd.x - nx * tickHalf,
+                    y: lineEnd.y - ny * tickHalf,
+                  };
+                  const tickEndB = {
+                    x: lineEnd.x + nx * tickHalf,
+                    y: lineEnd.y + ny * tickHalf,
+                  };
+
+                  const midX = (lineStart.x + lineEnd.x) / 2;
+                  const midY = (lineStart.y + lineEnd.y) / 2;
+
+                  const labelX = midX + nx * labelOffset;
+                  const labelY = midY + ny * labelOffset;
+
+                  const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+                  const readableAngle = angleDeg > 90 || angleDeg < -90 ? angleDeg + 180 : angleDeg;
+
+                  const text = `${span.lengthM.toFixed(2)} m`;
+                  const fontSize = DRAWING_STYLES.dimensionTextSizePx;
+                  const padding = DRAWING_STYLES.dimensionLabelPaddingPx;
+                  const estimatedWidth = text.length * fontSize * 0.6 + padding * 2;
+                  const estimatedHeight = fontSize + padding * 2;
+
+                  return (
+                    <Group key={span.id}>
+                      <Line
+                        points={[lineStart.x, lineStart.y, lineEnd.x, lineEnd.y]}
+                        stroke="#1e293b"
+                        strokeWidth={DRAWING_STYLES.dimensionLineWidthPx}
+                        listening={false}
+                      />
+                      <Line
+                        points={[tickStartA.x, tickStartA.y, tickStartB.x, tickStartB.y]}
+                        stroke="#1e293b"
+                        strokeWidth={DRAWING_STYLES.dimensionLineWidthPx}
+                        listening={false}
+                      />
+                      <Line
+                        points={[tickEndA.x, tickEndA.y, tickEndB.x, tickEndB.y]}
+                        stroke="#1e293b"
+                        strokeWidth={DRAWING_STYLES.dimensionLineWidthPx}
+                        listening={false}
+                      />
+                      <Group x={labelX} y={labelY} rotation={readableAngle}>
+                        <Rect
+                          width={estimatedWidth}
+                          height={estimatedHeight}
+                          offsetX={estimatedWidth / 2}
+                          offsetY={estimatedHeight / 2}
+                          fill="rgba(255,255,255,0.9)"
+                          stroke="rgba(15,23,42,0.35)"
+                          strokeWidth={1}
+                          cornerRadius={4}
+                        />
+                        <Text
+                          text={text}
+                          fontSize={fontSize}
+                          fill="#0f172a"
+                          fontFamily="JetBrains Mono"
+                          offsetX={estimatedWidth / 2}
+                          offsetY={estimatedHeight / 2}
+                          width={estimatedWidth}
+                          height={estimatedHeight}
+                          align="center"
+                          verticalAlign="middle"
+                        />
+                      </Group>
+                    </Group>
+                  );
                 })}
 
                 {posts.map((post) => {
@@ -178,9 +287,11 @@ export default function DrawingPage() {
                       key={post.id}
                       x={transformedPost.x}
                       y={transformedPost.y}
-                      mmPerPixel={effectiveMmPerPixel}
                       category={post.category}
                       angleDeg={angleDeg}
+                      sizePx={DRAWING_STYLES.postSizePx}
+                      cornerRadiusPx={DRAWING_STYLES.postCornerRadiusPx}
+                      strokeWidthPx={DRAWING_STYLES.postStrokeWidthPx}
                     />
                   );
                 })}

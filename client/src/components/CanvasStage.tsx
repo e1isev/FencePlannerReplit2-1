@@ -11,7 +11,7 @@ import {
   findSnapPoint,
   findSnapPointOnSegment,
 } from "@/geometry/snapping";
-import { FENCE_THICKNESS_MM, LINE_HIT_SLOP_PX } from "@/constants/geometry";
+import { LINE_HIT_SLOP_PX } from "@/constants/geometry";
 import { getSlidingReturnRect } from "@/geometry/gates";
 import { LineControls } from "./LineControls";
 import { GateControls } from "./GateControls";
@@ -21,12 +21,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PostShape } from "./PostShape";
 import { getPostAngleDeg, getPostNeighbours } from "@/geometry/posts";
+import { DRAWING_STYLES } from "@/styles/drawingStyles";
 import { distanceMetersProjected } from "@/lib/geo";
 
 const BASE_MAP_ZOOM = 15;
 const TEN_YARDS_METERS = 9.144;
 const FIXED_SCALE_METERS_PER_PIXEL = 1.82;
-const LABEL_OFFSET_PX = 14;
+const LABEL_OFFSET_PX = DRAWING_STYLES.labelOffsetPx;
 const MIN_LINE_HIT_PX = 10;
 const DRAG_THRESHOLD_PX = 4;
 const SNAP_SCREEN_MIN_PX = 10;
@@ -118,11 +119,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const setSelectedGateId = useAppStore((state) => state.setSelectedGateId);
   const mmPerPixelRef = useRef(mmPerPixel);
   mmPerPixelRef.current = mmPerPixel;
-
-  const mmToPx = useCallback(
-    (mm: number) => (mmPerPixel > 0 ? mm / mmPerPixel : mm),
-    [mmPerPixel]
-  );
 
   const screenLines = useMemo(() => {
     const map = mapRef.current;
@@ -322,8 +318,8 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const segmentSnapTolPx = Math.min(snapTolerance, SEGMENT_SNAP_SCREEN_MAX_PX);
   const dragThresholdPx = DRAG_THRESHOLD_PX;
   const lineHitStrokeWidth = Math.max(MIN_LINE_HIT_PX, 1);
-  const previewStrokeWidth = mmToPx(FENCE_THICKNESS_MM);
-  const previewDashLength = mmToPx(FENCE_THICKNESS_MM);
+  const previewStrokeWidth = DRAWING_STYLES.fenceLineStrokePx;
+  const previewDashLength = DRAWING_STYLES.fenceLineStrokePx;
 
   const resolveSnapTarget = useCallback(
     (screenPoint: ScreenPoint): SnapTarget => {
@@ -1011,8 +1007,8 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
               const isInteractive = !isGate && !isReadOnly;
               const isGateInteractive = isGate && !isReadOnly && !selectedGateType;
 
-              const baseStrokeWidth = mmToPx(FENCE_THICKNESS_MM);
-              const outlineStrokeWidth = baseStrokeWidth + mmToPx(6);
+              const baseStrokeWidth = DRAWING_STYLES.fenceLineStrokePx;
+              const outlineStrokeWidth = DRAWING_STYLES.fenceLineOutlinePx;
               const linePoints = [line.a.x, line.a.y, line.b.x, line.b.y];
 
               const mainStroke = isGate
@@ -1034,6 +1030,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
                     strokeWidth={outlineStrokeWidth}
                     opacity={isGate ? 0.8 : mapMode === "satellite" ? 0.75 : 0.9}
                     listening={false}
+                    strokeScaleEnabled={false}
                   />
                   <Line
                     points={linePoints}
@@ -1041,8 +1038,9 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
                     strokeWidth={baseStrokeWidth}
                     opacity={isGate ? 0.8 : 1}
                     listening={false}
-                    shadowColor={mapMode === "satellite" ? "rgba(0,0,0,0.6)" : undefined}
-                    shadowBlur={mapMode === "satellite" ? 2 : undefined}
+                    shadowColor={mapMode === "satellite" ? "rgba(0,0,0,0.6)" : "rgba(15,23,42,0.35)"}
+                    shadowBlur={DRAWING_STYLES.fenceLineShadowBlurPx}
+                    strokeScaleEnabled={false}
                   />
                   {isInteractive && (
                     <Line
@@ -1179,10 +1177,12 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
                   <PostShape
                     x={post.screenPos.x}
                     y={post.screenPos.y}
-                    mmPerPixel={mmPerPixel}
                     category={post.category}
                     angleDeg={angleDeg}
                     isSatelliteMode={mapMode === "satellite"}
+                    sizePx={DRAWING_STYLES.postSizePx}
+                    cornerRadiusPx={DRAWING_STYLES.postCornerRadiusPx}
+                    strokeWidthPx={DRAWING_STYLES.postStrokeWidthPx}
                   />
                 </Group>
               );
