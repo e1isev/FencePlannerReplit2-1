@@ -20,7 +20,6 @@ import { calculateMetersPerPixel } from "@/lib/mapScale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PostShape } from "./PostShape";
-import { getPostAngleDeg, getPostNeighbours } from "@/geometry/posts";
 import { DRAWING_STYLES } from "@/styles/drawingStyles";
 import { distanceMetersProjected } from "@/lib/geo";
 
@@ -107,6 +106,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
 
   const lines = useAppStore((state) => state.lines);
   const posts = useAppStore((state) => state.posts);
+  const postAngles = useAppStore((state) => state.postAngles);
   const gates = useAppStore((state) => state.gates);
   const addLine = useAppStore((state) => state.addLine);
   const splitLineAtPoint = useAppStore((state) => state.splitLineAtPoint);
@@ -1169,8 +1169,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
             })()}
 
             {screenPosts.map((post) => {
-              const neighbours = getPostNeighbours(post.pos, lines);
-              const angleDeg = getPostAngleDeg(post.pos, neighbours, lines, post.category);
+              const angleDeg = postAngles[post.id] ?? 0;
 
               return (
                 <Group key={post.id}>
