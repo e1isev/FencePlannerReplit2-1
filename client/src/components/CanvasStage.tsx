@@ -20,7 +20,6 @@ import { calculateMetersPerPixel } from "@/lib/mapScale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PostShape } from "./PostShape";
-import { getPostAngleDeg, getPostNeighbours } from "@/geometry/posts";
 import { DRAWING_STYLES } from "@/styles/drawingStyles";
 import { distanceMetersProjected } from "@/lib/geo";
 
@@ -107,6 +106,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
 
   const lines = useAppStore((state) => state.lines);
   const posts = useAppStore((state) => state.posts);
+  const orderedPosts = useAppStore((state) => state.orderedPosts);
   const gates = useAppStore((state) => state.gates);
   const addLine = useAppStore((state) => state.addLine);
   const splitLineAtPoint = useAppStore((state) => state.splitLineAtPoint);
@@ -147,6 +147,53 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
       };
     });
   }, [posts, mapCenter, mapZoom]);
+
+  const orderedPostIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    orderedPosts.forEach((entry, index) => {
+      map.set(entry.post.id, index);
+    });
+    return map;
+  }, [orderedPosts]);
+
+  const getPostAngleDeg = useCallback(
+    (postId: string): number => {
+      const map = mapRef.current;
+      if (!map || orderedPosts.length < 2) return 0;
+
+      const index = orderedPostIndexMap.get(postId);
+      if (index === undefined) return 0;
+
+      const isLast = index === orderedPosts.length - 1;
+      const fromPost = isLast ? orderedPosts[index - 1] : orderedPosts[index];
+      const toPost = isLast ? orderedPosts[index] : orderedPosts[index + 1];
+
+      if (!fromPost || !toPost) return 0;
+
+      const fromScreen = map.project({
+        lng: fromPost.post.pos.x,
+        lat: fromPost.post.pos.y,
+      });
+      const toScreen = map.project({
+        lng: toPost.post.pos.x,
+        lat: toPost.post.pos.y,
+      });
+
+      const dx = toScreen.x - fromScreen.x;
+      const dy = toScreen.y - fromScreen.y;
+      if (Math.hypot(dx, dy) < 1e-6) {
+        console.debug("Post rotation warning: coincident posts detected.", {
+          postId,
+          fromPostId: fromPost.post.id,
+          toPostId: toPost.post.id,
+        });
+        return 0;
+      }
+
+      return (Math.atan2(dy, dx) * 180) / Math.PI;
+    },
+    [orderedPostIndexMap, orderedPosts]
+  );
 
   const toLngLat = useCallback((point: ScreenPoint): Point | null => {
     const map = mapRef.current;
@@ -1169,8 +1216,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
             })()}
 
             {screenPosts.map((post) => {
-              const neighbours = getPostNeighbours(post.pos, lines);
-              const angleDeg = getPostAngleDeg(post.pos, neighbours, lines, post.category);
+              const angleDeg = getPostAngleDeg(post.id);
 
               return (
                 <Group key={post.id}>

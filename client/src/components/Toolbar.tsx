@@ -27,6 +27,7 @@ export function Toolbar() {
   const fenceColorId = useAppStore((state) => state.fenceColorId);
   const panels = useAppStore((state) => state.panels);
   const posts = useAppStore((state) => state.posts);
+  const postSpans = useAppStore((state) => state.postSpans);
   const lines = useAppStore((state) => state.lines);
   const updateGateReturnSide = useAppStore((state) => state.updateGateReturnSide);
   const [, setLocation] = useLocation();
@@ -60,6 +61,7 @@ export function Toolbar() {
       fenceColourMode: getFenceColourMode(fenceColorId),
       panels,
       posts,
+      postSpans,
       gates,
       lines,
     });

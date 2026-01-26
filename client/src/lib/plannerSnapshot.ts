@@ -12,6 +12,7 @@ import type {
   Leftover,
   PanelSegment,
   Post,
+  PostSpan,
   ProductKind,
   WarningMsg,
 } from "@/types/models";
@@ -44,6 +45,7 @@ type FencingPlannerState = {
   gates: Gate[];
   panels: PanelSegment[];
   posts: Post[];
+  postSpans: PostSpan[];
   leftovers: Leftover[];
   warnings: WarningMsg[];
   panelPositionsMap: Record<string, number[]>;
@@ -131,6 +133,7 @@ const buildFencingPlannerState = (): FencingPlannerState => {
     gates: store.gates,
     panels: store.panels,
     posts: store.posts,
+    postSpans: store.postSpans,
     leftovers: store.leftovers,
     warnings: store.warnings,
     panelPositionsMap: store.panelPositionsMap
