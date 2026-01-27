@@ -67,6 +67,7 @@ const PICKET_EXCEPTIONS = new Set(["Mystique Solid", "Mystique Lattice"]);
 
 const styleKeyForSelection = (selection: ResidentialSelection) => {
   if (selection.type === "Panel") return selection.fenceStyle;
+  if (selection.type.includes("Post")) return "Picket";
   return PICKET_EXCEPTIONS.has(selection.fenceStyle) ? selection.fenceStyle : "Picket";
 };
 
