@@ -3,7 +3,7 @@ import { Label, Layer, Line, Tag, Text, Group, Rect, Stage } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { Stage as KonvaStage } from "konva/lib/Stage";
 import type { Map as MaplibreMap } from "maplibre-gl";
-import { MAX_RUN_MM, MIN_RUN_MM, useAppStore } from "@/store/appStore";
+import { useAppStore } from "@/store/appStore";
 import { Point } from "@/types/models";
 import {
   ENDPOINT_SNAP_RADIUS_MM,
@@ -15,14 +15,12 @@ import { LINE_HIT_SLOP_PX } from "@/constants/geometry";
 import { getSlidingReturnRect } from "@/geometry/gates";
 import { LineControls } from "./LineControls";
 import { GateControls } from "./GateControls";
-import { Card } from "@/components/ui/card";
 import MapOverlay, {
   DEFAULT_CENTER,
   type MapStyleMode,
   type SatelliteProvider,
 } from "./MapOverlay";
 import { calculateMetersPerPixel } from "@/lib/mapScale";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PostShape } from "./PostShape";
 import { DRAWING_STYLES } from "@/styles/drawingStyles";
@@ -39,10 +37,6 @@ const SNAP_SCREEN_MAX_PX = 40;
 const SEGMENT_SNAP_SCREEN_MAX_PX = 20;
 const MAP_MODE_STORAGE_KEY = "fpr2.mapMode";
 const MAP_STYLE_MODES = ["street", "satellite"] as const;
-const ENDPOINT_WELD_EPS_MM = 60;
-
-const mmToMeters = (mm: number) => mm / 1000;
-
 function isMapStyleMode(value: string): value is (typeof MAP_STYLE_MODES)[number] {
   return (MAP_STYLE_MODES as readonly string[]).includes(value);
 }
@@ -94,10 +88,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const [startSnap, setStartSnap] = useState<SnapTarget | null>(null);
   const [currentSnap, setCurrentSnap] = useState<SnapTarget | null>(null);
   const [hoverSnap, setHoverSnap] = useState<SnapTarget | null>(null);
-  const [editingLineId, setEditingLineId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [labelUnit, setLabelUnit] = useState<"mm" | "m">("mm");
-  const [editError, setEditError] = useState<string | null>(null);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
   const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
   const [lastTouchCenter, setLastTouchCenter] = useState<{ x: number; y: number } | null>(null);
@@ -119,7 +109,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const selectedGateType = useAppStore((state) => state.selectedGateType);
   const selectedGateId = useAppStore((state) => state.selectedGateId);
   const addGate = useAppStore((state) => state.addGate);
-  const updateLine = useAppStore((state) => state.updateLine);
   const mmPerPixel = useAppStore((state) => state.mmPerPixel);
   const setMmPerPixel = useAppStore((state) => state.setMmPerPixel);
   const setSelectedGateId = useAppStore((state) => state.setSelectedGateId);
@@ -655,7 +644,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
       return;
     }
 
-    if (isPanning || editingLineId) return;
+    if (isPanning) return;
 
     const worldPoint = getWorldPointFromEvent(e);
     if (!worldPoint) return;
@@ -750,7 +739,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
       const worldPoint = toLngLat(pointer);
       if (!worldPoint) return;
 
-      if (isPanning || editingLineId) return;
+      if (isPanning) return;
 
       pointerDownScreenRef.current = pointer;
       didDragRef.current = false;
@@ -840,7 +829,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
     }
   };
 
-  const handleLabelClick = (lineId: string, currentLength: number, e: any) => {
+  const handleLabelClick = (lineId: string, e: any) => {
     e.cancelBubble = true;
     const line = lines.find((l) => l.id === lineId);
     if (line) {
@@ -861,15 +850,8 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
         if (worldPoint) {
           addGate(lineId, worldPoint);
         }
-      } else if (e.evt.shiftKey) {
-        setSelectedLineId(lineId);
-        setSelectedGateId(null);
       } else {
         setSelectedLineId(lineId);
-        setEditingLineId(lineId);
-        setLabelUnit("mm");
-        setEditValue(currentLength.toFixed(0));
-        setEditError(null);
         setSelectedGateId(null);
       }
     }
@@ -912,113 +894,22 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
     setSelectedLineId(null);
   };
 
-  const parseLengthInput = useCallback(
-    (value: string, unit: "mm" | "m") => {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        return { mm: null, error: "Enter a value" };
-      }
-
-      const numeric = Number(trimmed);
-      if (!Number.isFinite(numeric)) {
-        return { mm: null, error: "Enter a valid number" };
-      }
-      if (numeric <= 0) {
-        return { mm: null, error: "Value must be greater than zero" };
-      }
-
-      const mm = unit === "m" ? numeric * 1000 : numeric;
-      if (mm < MIN_RUN_MM) {
-        return {
-          mm: null,
-          error: `Value too small. Minimum is ${(MIN_RUN_MM / 1000).toFixed(2)} m`,
-        };
-      }
-      if (mm > MAX_RUN_MM) {
-        return { mm: null, error: "Value too large, check units" };
-      }
-
-      return { mm };
-    },
-    []
-  );
-
-  const handleLabelSubmit = () => {
-    if (!editingLineId) return;
-
-    const { mm, error } = parseLengthInput(editValue, labelUnit);
-    if (!mm || error) {
-      setEditError(error ?? "Enter a value");
-      return;
-    }
-
-    const targetLineId = editingLineId;
-
-    setEditingLineId(null);
-    setEditValue("");
-    setEditError(null);
-
-    queueMicrotask(() => {
-      const targetLine = lines.find((line) => line.id === targetLineId);
-      const gateToleranceMeters = mmToMeters(ENDPOINT_WELD_EPS_MM);
-      const isGateEndpoint = (point: Point) =>
-        lines.some(
-          (line) =>
-            line.gateId &&
-            line.id !== targetLineId &&
-            (distanceMetersProjected(line.a, point) <= gateToleranceMeters ||
-              distanceMetersProjected(line.b, point) <= gateToleranceMeters)
-        );
-      const gateAtA = targetLine ? isGateEndpoint(targetLine.a) : false;
-      const gateAtB = targetLine ? isGateEndpoint(targetLine.b) : false;
-      const fromEnd = gateAtB && !gateAtA ? "a" : "b";
-
-      try {
-        updateLine(targetLineId, mm, fromEnd, { allowMerge: false });
-        const latestLines = useAppStore.getState().lines;
-        const stillExists = latestLines.some((line) => line.id === targetLineId);
-        if (!stillExists) {
-          setSelectedLineId(null);
-        }
-      } catch (err) {
-        setEditError(err instanceof Error ? err.message : "Unable to update length");
-        setEditingLineId(targetLineId);
-      }
-    });
-  };
-
-  const handleUnitChange = (unit: "mm" | "m") => {
-    if (unit === labelUnit) return;
-    const numeric = Number(editValue);
-    let convertedValue = editValue;
-
-    if (Number.isFinite(numeric)) {
-      const mmValue = labelUnit === "m" ? numeric * 1000 : numeric;
-      convertedValue = unit === "m" ? (mmValue / 1000).toString() : mmValue.toString();
-    }
-
-    setLabelUnit(unit);
-    setEditValue(convertedValue);
-    setEditError(null);
-  };
-
-  const validationResult = parseLengthInput(editValue, labelUnit);
-  const inlineError = editError ?? validationResult.error;
-
-  const helperText = (() => {
-    const numeric = Number(editValue);
-    if (!Number.isFinite(numeric) || numeric <= 0) return null;
-    const mmValue = labelUnit === "m" ? numeric * 1000 : numeric;
-    const metresValue = mmValue / 1000;
-
-    return labelUnit === "m"
-      ? `= ${mmValue.toLocaleString()} mm`
-      : `= ${metresValue.toFixed(3)} m`;
-  })();
-
   const gridLines: JSX.Element[] = [];
 
   const isReadOnly = readOnly;
+
+  useEffect(() => {
+    if (isReadOnly) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedLineId(null);
+        setSelectedGateId(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isReadOnly, setSelectedGateId]);
 
   return (
     <div
@@ -1185,7 +1076,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
                         offsetY={estimatedHeight / 2}
                         rotation={readableAngle}
                         listening={!isReadOnly}
-                        onClick={isReadOnly ? undefined : (e) => handleLabelClick(line.id, line.length_mm, e)}
+                        onClick={isReadOnly ? undefined : (e) => handleLabelClick(line.id, e)}
                         onMouseDown={isReadOnly ? undefined : handleLabelPointerDown}
                         onTouchStart={isReadOnly ? undefined : handleLabelPointerDown}
                       >
@@ -1300,7 +1191,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
 
       {!isReadOnly && (selectedLineId || selectedGateId) && (
         <div className="absolute top-4 right-4 z-50">
-          <Card className="bg-white p-4 rounded-lg shadow-xl border-2 border-slate-200 min-w-72">
+          <Card className="bg-white p-4 rounded-lg shadow-xl border-2 border-slate-200 w-[min(92vw,24rem)]">
             <div className="space-y-4">
               {selectedLineId && (
                 <div className={selectedGateId ? "border-b border-slate-200 pb-4" : undefined}>
@@ -1323,72 +1214,6 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
         </div>
       )}
 
-      {!isReadOnly && editingLineId && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white p-4 rounded-lg shadow-lg border border-slate-200">
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={editValue}
-              onChange={(e) => {
-                setEditValue(e.target.value);
-                setEditError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleLabelSubmit();
-                if (e.key === "Escape") {
-                  setEditingLineId(null);
-                  setEditValue("");
-                  setEditError(null);
-                }
-              }}
-              className="px-3 py-2 border border-slate-300 rounded-md text-sm font-mono w-28"
-              autoFocus
-              data-testid="input-dimension"
-              placeholder="Length"
-            />
-            <div className="flex rounded-md border border-slate-300 overflow-hidden text-xs">
-              <button
-                type="button"
-                className={`px-2 py-1 ${labelUnit === "mm" ? "bg-primary text-primary-foreground" : "bg-white text-slate-700"}`}
-                onClick={() => handleUnitChange("mm")}
-              >
-                mm
-              </button>
-              <button
-                type="button"
-                className={`px-2 py-1 ${labelUnit === "m" ? "bg-primary text-primary-foreground" : "bg-white text-slate-700"}`}
-                onClick={() => handleUnitChange("m")}
-              >
-                m
-              </button>
-            </div>
-          </div>
-          {helperText && <p className="text-xs text-slate-600 mt-2 font-mono">{helperText}</p>}
-          {inlineError && <p className="text-xs text-red-600 mt-1">{inlineError}</p>}
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={handleLabelSubmit}
-              className="px-3 py-1 bg-primary text-primary-foreground rounded text-xs disabled:opacity-60"
-              data-testid="button-submit-dimension"
-              disabled={Boolean(validationResult.error)}
-            >
-              Apply
-            </button>
-            <button
-              onClick={() => {
-                setEditingLineId(null);
-                setEditValue("");
-                setEditError(null);
-              }}
-              className="px-3 py-1 bg-slate-200 rounded text-xs"
-              data-testid="button-cancel-dimension"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
