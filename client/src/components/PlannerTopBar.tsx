@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
 import { useProjectSessionStore } from "@/store/projectSessionStore";
 import { useAuthStore } from "@/store/authStore";
+import { BugReportDialog } from "@/components/BugReportDialog";
 
 export function PlannerTopBar() {
   const [, setLocation] = useLocation();
@@ -51,6 +52,7 @@ export function PlannerTopBar() {
       </div>
       <div className="flex items-center gap-3">
         {statusLabel() && <span className="text-xs text-slate-500">{statusLabel()}</span>}
+        <BugReportDialog />
         <Button onClick={() => void saveProject()} data-testid="button-save-project-topbar">
           {user ? "Save" : "Save locally"}
         </Button>
