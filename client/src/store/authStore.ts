@@ -46,10 +46,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         body: JSON.stringify({ email, password }),
       });
       if (!response.ok) {
-        const body = (await response.json()) as { message?: string };
+        const body = (await safeParseJson(response)) as { message?: string } | null;
         set({
           loading: false,
-          error: body.message ?? "Unable to log in.",
+          error: body?.message ?? `Unable to log in (status ${response.status}).`,
         });
         return false;
       }
@@ -73,10 +73,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         body: JSON.stringify({ email, password }),
       });
       if (!response.ok) {
-        const body = (await response.json()) as { message?: string };
+        const body = (await safeParseJson(response)) as { message?: string } | null;
         set({
           loading: false,
-          error: body.message ?? "Unable to register.",
+          error: body?.message ?? `Unable to register (status ${response.status}).`,
         });
         return false;
       }
@@ -104,3 +104,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 }));
+
+const safeParseJson = async (response: Response) => {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return null;
+  }
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
