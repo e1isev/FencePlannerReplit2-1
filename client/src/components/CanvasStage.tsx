@@ -15,7 +15,11 @@ import { LINE_HIT_SLOP_PX } from "@/constants/geometry";
 import { getSlidingReturnRect } from "@/geometry/gates";
 import { LineControls } from "./LineControls";
 import { GateControls } from "./GateControls";
-import MapOverlay, { DEFAULT_CENTER, type MapStyleMode } from "./MapOverlay";
+import MapOverlay, {
+  DEFAULT_CENTER,
+  type MapStyleMode,
+  type SatelliteProvider,
+} from "./MapOverlay";
 import { calculateMetersPerPixel } from "@/lib/mapScale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -99,6 +103,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   const [panByDelta, setPanByDelta] = useState<{ x: number; y: number } | null>(null);
   const baseMetersPerPixelRef = useRef<number | null>(null);
   const mapMetersPerPixelRef = useRef<number | null>(null);
+  const lastScaleProviderRef = useRef<SatelliteProvider | null>(null);
   const calibrationFactorRef = useRef(1);
   const pointerDownScreenRef = useRef<ScreenPoint | null>(null);
   const didDragRef = useRef(false);
@@ -228,14 +233,18 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
   }, []);
 
   const handleScaleChange = useCallback(
-    (metersPerPixel: number, _zoom?: number) => {
+    (metersPerPixel: number, _zoom?: number, provider?: SatelliteProvider) => {
       if (!isFinite(metersPerPixel) || metersPerPixel <= 0) return;
 
       mapMetersPerPixelRef.current = metersPerPixel;
 
       setCurrentMetersPerPixel(metersPerPixel);
 
-      if (baseMetersPerPixelRef.current === null) {
+      if (provider && provider !== lastScaleProviderRef.current) {
+        lastScaleProviderRef.current = provider;
+        baseMetersPerPixelRef.current = metersPerPixel;
+        setBaseMetersPerPixel(metersPerPixel);
+      } else if (baseMetersPerPixelRef.current === null) {
         baseMetersPerPixelRef.current = metersPerPixel;
         setBaseMetersPerPixel(metersPerPixel);
       }

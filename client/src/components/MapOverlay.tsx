@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { calculateMetersPerPixel } from "@/lib/mapScale";
+import { distanceMetersProjected } from "@/lib/geo";
 import { geocode } from "@/lib/geocode";
 import {
   MIN_QUERY_LENGTH,
@@ -19,7 +20,7 @@ type SearchResult = AddressSuggestion;
 
 export interface MapOverlayProps {
   onZoomChange?: (zoom: number) => void;
-  onScaleChange?: (metersPerPixel: number, zoom?: number) => void;
+  onScaleChange?: (metersPerPixel: number, zoom?: number, provider?: SatelliteProvider) => void;
   onMapModeChange?: (mode: MapStyleMode) => void;
   onMapReady?: (map: maplibregl.Map) => void;
   onCenterChange?: (center: { lng: number; lat: number }) => void;
@@ -30,7 +31,7 @@ export interface MapOverlayProps {
 
 export const DEFAULT_CENTER: [number, number] = [144.9834, -37.8199];
 
-type SatelliteProvider = "nearmap" | "maptiler" | "esri";
+export type SatelliteProvider = "nearmap" | "maptiler" | "esri";
 
 const MAPTILER_API_KEY =
   import.meta.env.VITE_MAPTILER_API_KEY ??
@@ -415,6 +416,23 @@ function moveWhenReady(
 }
 
 export type MapStyleMode = "street" | "satellite";
+
+function calculateMapMetersPerPixel(map: maplibregl.Map) {
+  const center = map.getCenter();
+  const centerPoint = map.project(center);
+  const rightLngLat = map.unproject([centerPoint.x + 1, centerPoint.y]);
+
+  const metersPerPixel = distanceMetersProjected(
+    { x: center.lng, y: center.lat },
+    { x: rightLngLat.lng, y: rightLngLat.lat }
+  );
+
+  if (Number.isFinite(metersPerPixel) && metersPerPixel > 0) {
+    return metersPerPixel;
+  }
+
+  return calculateMetersPerPixel(map.getZoom(), center.lat);
+}
 
 function buildMapStyle(
   mode: MapStyleMode,
@@ -984,13 +1002,28 @@ export function MapOverlay({
     const map = mapRef.current;
     if (!map) return;
 
+    const emitScaleChange = () => {
+      const zoom = map.getZoom();
+      const metersPerPixel = calculateMapMetersPerPixel(map);
+      const activeProvider =
+        mapModeRef.current === "satellite"
+          ? satelliteProviderRef.current
+          : BASE_SATELLITE_PROVIDER;
+
+      onScaleChange?.(metersPerPixel, zoom, activeProvider);
+    };
+
     const handleViewChange = () => {
       const zoom = map.getZoom();
       const center = map.getCenter();
       setMapCenter([center.lng, center.lat]);
       onZoomChange?.(zoom);
-      const metersPerPixel = calculateMetersPerPixel(zoom, center.lat);
-      onScaleChange?.(metersPerPixel, zoom);
+      const metersPerPixel = calculateMapMetersPerPixel(map);
+      const activeProvider =
+        mapModeRef.current === "satellite"
+          ? satelliteProviderRef.current
+          : BASE_SATELLITE_PROVIDER;
+      onScaleChange?.(metersPerPixel, zoom, activeProvider);
       onCenterChange?.({ lng: center.lng, lat: center.lat });
     };
 
@@ -998,11 +1031,25 @@ export function MapOverlay({
     map.on("zoom", handleViewChange);
     map.on("move", handleViewChange);
 
+    emitScaleChange();
+
     return () => {
       map.off("zoom", handleViewChange);
       map.off("move", handleViewChange);
     };
   }, [onCenterChange, onScaleChange, onZoomChange, setMapCenter]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const zoom = map.getZoom();
+    const metersPerPixel = calculateMapMetersPerPixel(map);
+    const activeProvider =
+      mapMode === "satellite" ? satelliteProvider : BASE_SATELLITE_PROVIDER;
+
+    onScaleChange?.(metersPerPixel, zoom, activeProvider);
+  }, [mapMode, onScaleChange, satelliteProvider]);
 
   useEffect(() => {
     const map = mapRef.current;
