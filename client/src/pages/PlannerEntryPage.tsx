@@ -25,7 +25,16 @@ export default function PlannerEntryPage({ params }: { params: { projectId?: str
   const resetPlannerState = useAppStore((state) => state.resetPlannerState);
   const hydrateFromSnapshot = useAppStore((state) => state.hydrateFromSnapshot);
 
-  const query = useMemo(() => new URLSearchParams(location.split("?")[1] ?? ""), [location]);
+  const query = useMemo(() => {
+    const hashQuery = location.split("?")[1] ?? "";
+    if (hashQuery) {
+      return new URLSearchParams(hashQuery);
+    }
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search);
+    }
+    return new URLSearchParams();
+  }, [location]);
   const requestedType = query.get("projectType") ?? query.get("type");
   const projectName = query.get("name");
   const localId = query.get("localId");
@@ -61,7 +70,7 @@ export default function PlannerEntryPage({ params }: { params: { projectId?: str
       const restored = restoreActiveProject();
       if (restored) return;
     }
-    if (!requestedProjectType && currentType && currentType !== "decking") {
+    if (!requestedProjectType && currentType && currentType !== "decking" && activeProjectId) {
       return;
     }
     const type = requestedProjectType ?? "residential";
