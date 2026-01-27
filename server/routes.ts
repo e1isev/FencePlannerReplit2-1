@@ -11,6 +11,11 @@ import { and, eq } from "drizzle-orm";
 import { initDb, db } from "./db";
 import { projects, users } from "./db/schema";
 import {
+  parseScreenshotDataUrl,
+  persistSupportReport,
+  sendSupportReportEmail,
+} from "./supportReport";
+import {
   createSession,
   clearSession,
   getSessionCookieName,
@@ -57,6 +62,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/catalog/mappings", (_req: Request, res: Response) => {
     res.status(200).json(getSkuMappings());
+  });
+
+  const supportReportSchema = z.object({
+    description: z.string().min(1),
+    expectation: z.string().min(1),
+    includeScreenshot: z.boolean(),
+    screenshotDataUrl: z.string().nullable().optional(),
+    context: z.object({
+      route: z.string().min(1),
+      screen: z.string().optional(),
+      uiState: z.record(z.any()).optional(),
+      appVersion: z.string().optional(),
+      build: z
+        .object({
+          commitHash: z.string().optional(),
+          buildNumber: z.string().optional(),
+        })
+        .optional(),
+      environment: z.record(z.any()).optional(),
+      user: z
+        .object({
+          id: z.string().nullable().optional(),
+          email: z.string().nullable().optional(),
+        })
+        .optional(),
+    }),
+    logs: z
+      .array(
+        z.object({
+          level: z.string(),
+          message: z.string(),
+          timestamp: z.string(),
+          extra: z.any().optional(),
+        })
+      )
+      .optional(),
+    breadcrumbs: z
+      .array(
+        z.object({
+          id: z.string(),
+          message: z.string(),
+          category: z.string(),
+          timestamp: z.string(),
+        })
+      )
+      .optional(),
+    correlation: z
+      .object({
+        sessionId: z.string(),
+      })
+      .optional(),
+  });
+
+  app.post("/api/support/report", async (req: Request, res: Response) => {
+    const parsed = supportReportSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid report payload." });
+    }
+
+    const reportId = randomUUID();
+    const createdAt = new Date().toISOString();
+    const payload = {
+      reportId,
+      createdAt,
+      ...parsed.data,
+    };
+
+    const screenshotBuffer =
+      parsed.data.includeScreenshot && parsed.data.screenshotDataUrl
+        ? parseScreenshotDataUrl(parsed.data.screenshotDataUrl)
+        : null;
+
+    const files = await persistSupportReport(reportId, payload, screenshotBuffer);
+    const emailResult = await sendSupportReportEmail(reportId, payload, files);
+
+    return res.status(201).json({ reportId, emailStatus: emailResult.status });
   });
 
   const authSchema = z.object({

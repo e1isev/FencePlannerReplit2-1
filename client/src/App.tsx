@@ -1,4 +1,5 @@
 import { Switch, Route, Router } from "wouter";
+import { useEffect } from "react";
 import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -17,6 +18,7 @@ import PlannerEntryPage from "@/pages/PlannerEntryPage";
 import DeckingEntryPage from "@/pages/DeckingEntryPage";
 import StylesPage from "@/pages/StylesPage";
 import { AuthInitializer } from "@/components/AuthInitializer";
+import { initializeBugReportCapture } from "@/lib/bugReport";
 
 function AppRouter() {
   return (
@@ -42,6 +44,10 @@ function AppRouter() {
 }
 
 function App() {
+  useEffect(() => {
+    initializeBugReportCapture();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router hook={useHashLocation}>
