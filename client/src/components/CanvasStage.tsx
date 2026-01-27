@@ -864,6 +864,7 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
         setSelectedLineId(lineId);
         setSelectedGateId(null);
       } else {
+        setSelectedLineId(lineId);
         setEditingLineId(lineId);
         setLabelUnit("mm");
         setEditValue(currentLength.toFixed(0));
