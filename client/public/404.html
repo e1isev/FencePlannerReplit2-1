@@ -2,9 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="refresh" content="0; url=./" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Redirecting...</title>
+    <script>
+      const repoBase = "/FencePlannerReplit2-1";
+      const { pathname, search, hash } = window.location;
+      const normalizedPath = pathname.startsWith(repoBase)
+        ? pathname.slice(repoBase.length)
+        : pathname;
+      const targetPath =
+        normalizedPath === "/404.html" ? "/" : normalizedPath || "/";
+      const redirectUrl = `${repoBase}/#${targetPath}${search}${hash}`;
+      window.location.replace(redirectUrl);
+    </script>
   </head>
   <body>
     <p>Redirecting to the app...</p>
