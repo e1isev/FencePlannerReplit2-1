@@ -93,6 +93,49 @@ npm run build
 npm start
 ```
 
+## GitHub Pages deploy troubleshooting (fast failures)
+If the deploy job fails within a few seconds, it is usually configuration or permissions rather than a build output issue. Use the checks below to pinpoint the fix.
+
+### 1) Pages source is not set to GitHub Actions
+If Pages is still set to "Deploy from a branch", the deploy step can fail or behave strangely.
+
+**Fix:** Repo → Settings → Pages → Build and deployment → set **Source** to **GitHub Actions**.
+
+### 2) Missing deploy job permissions
+`actions/deploy-pages` requires explicit permissions or you will see errors like "Resource not accessible by integration" (403).
+
+**Fix:** ensure the deploy job has:
+```yaml
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+```
+
+### 3) Deploy job cannot find the uploaded artifact
+Deploy can fail fast if the artifact was not uploaded, or if the deploy job is not properly chained to the build job (missing `needs`).
+
+**Fix checklist:**
+- Build uploads the Pages artifact using `actions/upload-pages-artifact`.
+- Deploy job includes `needs: build`.
+- The uploaded path matches your build output folder (for Vite, usually `dist`).
+
+### 4) Environment protection rules or branch rules
+If the error mentions that a branch is not allowed to deploy to `github-pages`, it is an environment restriction issue.
+
+**Fix:** Repo → Settings → Environments → `github-pages` → remove restrictions or allow the branch you deploy from (usually `main`).
+
+### 5) Pages deployment already in progress
+This produces errors like "Deployment request failed ... due to in progress deployment ..."
+
+**Fix:** cancel any stuck Pages runs in the Actions list, then re-run the latest workflow.
+
+### What to copy from the failing run
+To identify the exact root cause quickly, open the workflow run → click **deploy** → copy the first red error line plus the three annotations (if present). Those annotations often say "No artifact", "Pages not enabled", "permission denied", or "in progress deployment", which map directly to the fixes above.
+
+### App shows "404 Page Not Found"
+If you see the in-app message "404 Page Not Found / Did you forget to add the page to the router?", the URL you opened does not match any route registered in the client router. Routes are defined in `client/src/App.tsx`; add a matching `<Route path="...">` entry or navigate to one of the existing paths listed there. For GitHub Pages or other static hosts, ensure your host is configured to serve `index.html` for client-side routes so direct refreshes on nested paths don't fall back to the 404 page.
+
 ## Database and authentication
 Project accounts and saved projects are stored in a local SQLite database file.
 
