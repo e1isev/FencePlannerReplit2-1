@@ -15,6 +15,7 @@ import { LINE_HIT_SLOP_PX } from "@/constants/geometry";
 import { getSlidingReturnRect } from "@/geometry/gates";
 import { LineControls } from "./LineControls";
 import { GateControls } from "./GateControls";
+import { Card } from "@/components/ui/card";
 import MapOverlay, {
   DEFAULT_CENTER,
   type MapStyleMode,
@@ -1297,18 +1298,29 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
         </div>
       )}
 
-      {!isReadOnly && selectedLineId && (
-        <LineControls
-          lineId={selectedLineId}
-          onClose={() => setSelectedLineId(null)}
-        />
-      )}
-
-      {!isReadOnly && selectedGateId && (
-        <GateControls
-          gateId={selectedGateId}
-          onClose={() => setSelectedGateId(null)}
-        />
+      {!isReadOnly && (selectedLineId || selectedGateId) && (
+        <div className="absolute top-4 right-4 z-50">
+          <Card className="bg-white p-4 rounded-lg shadow-xl border-2 border-slate-200 min-w-72">
+            <div className="space-y-4">
+              {selectedLineId && (
+                <div className={selectedGateId ? "border-b border-slate-200 pb-4" : undefined}>
+                  <LineControls
+                    lineId={selectedLineId}
+                    onClose={() => setSelectedLineId(null)}
+                  />
+                </div>
+              )}
+              {selectedGateId && (
+                <div className={selectedLineId ? "pt-4" : undefined}>
+                  <GateControls
+                    gateId={selectedGateId}
+                    onClose={() => setSelectedGateId(null)}
+                  />
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
       )}
 
       {!isReadOnly && editingLineId && (
