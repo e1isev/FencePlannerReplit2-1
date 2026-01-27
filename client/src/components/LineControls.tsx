@@ -19,7 +19,7 @@ export function LineControls({ lineId, onClose }: LineControlsProps) {
   if (!line || line.gateId) return null;
 
   return (
-    <Card className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white p-4 rounded-lg shadow-xl border-2 border-slate-200 min-w-64">
+    <Card className="bg-white p-4 rounded-lg shadow-xl border-2 border-slate-200 min-w-64">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold">Line Options</h3>
         <Button

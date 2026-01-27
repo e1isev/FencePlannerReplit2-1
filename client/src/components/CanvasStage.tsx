@@ -1297,18 +1297,21 @@ export function CanvasStage({ readOnly = false, initialMapMode }: CanvasStagePro
         </div>
       )}
 
-      {!isReadOnly && selectedLineId && (
-        <LineControls
-          lineId={selectedLineId}
-          onClose={() => setSelectedLineId(null)}
-        />
-      )}
-
-      {!isReadOnly && selectedGateId && (
-        <GateControls
-          gateId={selectedGateId}
-          onClose={() => setSelectedGateId(null)}
-        />
+      {!isReadOnly && (selectedLineId || selectedGateId) && (
+        <div className="absolute top-4 right-4 z-50 flex flex-col gap-3">
+          {selectedLineId && (
+            <LineControls
+              lineId={selectedLineId}
+              onClose={() => setSelectedLineId(null)}
+            />
+          )}
+          {selectedGateId && (
+            <GateControls
+              gateId={selectedGateId}
+              onClose={() => setSelectedGateId(null)}
+            />
+          )}
+        </div>
       )}
 
       {!isReadOnly && editingLineId && (
