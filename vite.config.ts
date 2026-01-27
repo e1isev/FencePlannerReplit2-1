@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+const backendPort = process.env.API_PORT ?? "5000";
+
 export default defineConfig({
   base: "/FencePlannerReplit2-1/",
   plugins: [
@@ -39,6 +41,12 @@ export default defineConfig({
   server: {
     hmr: {
       overlay: false,
+    },
+    proxy: {
+      "/api": {
+        target: `http://localhost:${backendPort}`,
+        changeOrigin: true,
+      },
     },
     fs: {
       strict: true,

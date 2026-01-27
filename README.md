@@ -58,6 +58,14 @@ npm run dev
 ```
 The app starts on `http://localhost:5000` (or the port set in `PORT`). Hot reloading is enabled by Vite.
 
+### Running only the client dev server
+If you run the Vite dev server directly (for example, inside the `client/` directory), set `API_PORT`
+to the port where the backend is running so `/api/*` requests proxy correctly:
+```bash
+API_PORT=5000 vite
+```
+When `API_PORT` is not set, the dev server proxy falls back to port `5000`.
+
 ## Vite prebundle cache reset (__publicField is not defined)
 If you see `__publicField is not defined` or dependency updates are not being picked up, clear Vite's prebundle cache and force a re-optimization.
 
