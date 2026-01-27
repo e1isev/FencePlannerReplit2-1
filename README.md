@@ -177,3 +177,6 @@ Set `NEARMAP_API_KEY` in the server environment—**do not prefix it with `VITE_
 ## Notes
 - All client files live under `client/` with `src/main.tsx` as the entry point.
 - API routes are registered in `server/routes/` via `server/index.ts`.
+
+## Reporting architecture (bug reports)
+See [REPORTING_ARCHITECTURE.md](REPORTING_ARCHITECTURE.md) for the recommended end-to-end design for in-app report capture, storage, and GitHub issue creation.
