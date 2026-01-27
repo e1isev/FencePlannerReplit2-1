@@ -133,6 +133,9 @@ This produces errors like "Deployment request failed ... due to in progress depl
 ### What to copy from the failing run
 To identify the exact root cause quickly, open the workflow run → click **deploy** → copy the first red error line plus the three annotations (if present). Those annotations often say "No artifact", "Pages not enabled", "permission denied", or "in progress deployment", which map directly to the fixes above.
 
+### App shows "404 Page Not Found"
+If you see the in-app message "404 Page Not Found / Did you forget to add the page to the router?", the URL you opened does not match any route registered in the client router. Routes are defined in `client/src/App.tsx`; add a matching `<Route path="...">` entry or navigate to one of the existing paths listed there. For GitHub Pages or other static hosts, ensure your host is configured to serve `index.html` for client-side routes so direct refreshes on nested paths don't fall back to the 404 page.
+
 ## Database and authentication
 Project accounts and saved projects are stored in a local SQLite database file.
 
