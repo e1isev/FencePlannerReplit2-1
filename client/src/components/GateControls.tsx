@@ -51,7 +51,7 @@ export function GateControls({ gateId, onClose }: GateControlsProps) {
   };
 
   return (
-    <Card className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white p-4 rounded-lg shadow-xl border-2 border-slate-200 min-w-72">
+    <Card className="bg-white p-4 rounded-lg shadow-xl border-2 border-slate-200 min-w-72">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold">Gate Options</h3>
         <Button
