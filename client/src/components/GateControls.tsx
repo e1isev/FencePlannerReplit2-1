@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -51,8 +50,8 @@ export function GateControls({ gateId, onClose }: GateControlsProps) {
   };
 
   return (
-    <Card className="bg-white p-4 rounded-lg shadow-xl border-2 border-slate-200 min-w-72">
-      <div className="flex items-center justify-between mb-3">
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Gate Options</h3>
         <Button
           variant="ghost"
@@ -65,33 +64,31 @@ export function GateControls({ gateId, onClose }: GateControlsProps) {
         </Button>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="gate-width" className="text-sm font-medium">
-          Gate width (m)
-        </Label>
-        <Input
-          id="gate-width"
-          type="text"
-          inputMode="decimal"
-          value={draftValue}
-          onChange={(e) => {
-            setDraftValue(e.target.value);
+      <Label htmlFor="gate-width" className="text-sm font-medium">
+        Gate width (m)
+      </Label>
+      <Input
+        id="gate-width"
+        type="text"
+        inputMode="decimal"
+        value={draftValue}
+        onChange={(e) => {
+          setDraftValue(e.target.value);
+          setError(null);
+        }}
+        onBlur={() => commitNumeric(draftValue)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commitNumeric(draftValue);
+          if (e.key === "Escape") {
+            setDraftValue(formatGateWidthM(gate.opening_mm / 1000));
             setError(null);
-          }}
-          onBlur={() => commitNumeric(draftValue)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commitNumeric(draftValue);
-            if (e.key === "Escape") {
-              setDraftValue(formatGateWidthM(gate.opening_mm / 1000));
-              setError(null);
-            }
-          }}
-          placeholder="0.00"
-          data-testid="input-gate-width"
-        />
-        <p className="text-xs text-slate-500">{rangeLabel}</p>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-      </div>
-    </Card>
+          }
+        }}
+        placeholder="0.00"
+        data-testid="input-gate-width"
+      />
+      <p className="text-xs text-slate-500">{rangeLabel}</p>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
   );
 }
