@@ -1,4 +1,16 @@
+const normalizeApiBase = (base: string) => {
+  const trimmed = base.replace(/\/+$/, "");
+  if (!trimmed) return "";
+  if (trimmed.endsWith("/api")) return trimmed;
+  return `${trimmed}/api`;
+};
+
 const resolveApiBase = () => {
+  const envBase = import.meta.env.VITE_API_BASE_URL;
+  if (envBase) {
+    return normalizeApiBase(envBase);
+  }
+
   const base = import.meta.env.BASE_URL ?? "/";
   const normalizedBase = base.endsWith("/") ? base : `${base}/`;
   return `${normalizedBase}api`;
@@ -12,7 +24,8 @@ const isGithubPagesHost = () => {
 };
 
 export const isApiDisabled = () =>
-  import.meta.env.VITE_DISABLE_API === "true" || isGithubPagesHost();
+  import.meta.env.VITE_DISABLE_API === "true" ||
+  (isGithubPagesHost() && !import.meta.env.VITE_API_BASE_URL);
 
 const normalizeApiPath = (path: string) => {
   const trimmed = path.replace(/^\/+/, "");

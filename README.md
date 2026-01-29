@@ -149,6 +149,8 @@ Project accounts and saved projects are stored in a local SQLite database file.
 
 ### Environment variables
 - `SQLITE_PATH`: Optional. File path for the SQLite database. Defaults to `data/app.db`.
+- `VITE_API_BASE_URL`: Optional. Overrides the frontend API base URL (set to your backend origin; `/api` is appended automatically).
+- `VITE_DISABLE_API`: Optional. Set to `true` to disable API calls in the frontend (useful for static demos).
 
 ### Migration / setup
 The server initializes the SQLite tables on startup. Ensure the process has write access to the directory you set in `SQLITE_PATH`.

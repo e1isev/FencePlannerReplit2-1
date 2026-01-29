@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, isApiDisabled } from "@/lib/api";
 
 export type AuthUser = {
   id: string;
@@ -21,6 +21,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: false,
   error: null,
   refresh: async () => {
+    if (isApiDisabled()) {
+      set({ user: null, loading: false, error: null });
+      return;
+    }
     set({ loading: true, error: null });
     try {
       const response = await apiFetch("auth/me");
@@ -39,6 +43,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   login: async (email, password) => {
+    if (isApiDisabled()) {
+      set({ loading: false, error: "Authentication is unavailable in demo mode." });
+      return false;
+    }
     set({ loading: true, error: null });
     try {
       const response = await apiFetch("auth/login", {
@@ -66,6 +74,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   register: async (email, password) => {
+    if (isApiDisabled()) {
+      set({ loading: false, error: "Registration is unavailable in demo mode." });
+      return false;
+    }
     set({ loading: true, error: null });
     try {
       const response = await apiFetch("auth/register", {
@@ -93,6 +105,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   logout: async () => {
+    if (isApiDisabled()) {
+      set({ user: null, loading: false, error: null });
+      return;
+    }
     set({ loading: true, error: null });
     try {
       await apiFetch("auth/logout", { method: "POST" });
