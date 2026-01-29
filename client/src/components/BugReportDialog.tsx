@@ -153,7 +153,7 @@ export function BugReportDialog() {
     };
 
     try {
-      const response = await apiFetch("support/report", {
+      const response = await apiFetch("/api/support/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

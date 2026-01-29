@@ -39,7 +39,7 @@ export default function ProjectsDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiFetch("projects");
+      const response = await apiFetch("/api/projects");
       if (!response.ok) throw new Error("Unable to load projects.");
       const data = (await response.json()) as ProjectSummary[];
       setProjects(data);
@@ -76,7 +76,7 @@ export default function ProjectsDashboard() {
   const handleRename = async (project: ProjectSummary) => {
     const nextName = renaming[project.id]?.trim();
     if (!nextName) return;
-    const response = await apiFetch(`projects/${project.id}`, {
+    const response = await apiFetch(`/api/projects/${project.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: nextName }),
@@ -88,7 +88,7 @@ export default function ProjectsDashboard() {
   };
 
   const handleDelete = async (project: ProjectSummary) => {
-    const response = await apiFetch(`projects/${project.id}`, { method: "DELETE" });
+    const response = await apiFetch(`/api/projects/${project.id}`, { method: "DELETE" });
     if (response.ok) {
       void loadProjects();
     }

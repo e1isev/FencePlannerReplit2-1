@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set({ loading: true, error: null });
     try {
-      const response = await apiFetch("auth/me");
+      const response = await apiFetch("/api/auth/me");
       if (!response.ok) {
         set({ user: null, loading: false });
         return;
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set({ loading: true, error: null });
     try {
-      const response = await apiFetch("auth/login", {
+      const response = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -80,7 +80,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set({ loading: true, error: null });
     try {
-      const response = await apiFetch("auth/register", {
+      const response = await apiFetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -111,7 +111,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set({ loading: true, error: null });
     try {
-      await apiFetch("auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
       set({ user: null, loading: false });
     } catch (error) {
       set({
