@@ -204,8 +204,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     }
     try {
       const [catalogRes, rulesRes] = await Promise.all([
-        apiFetch("catalog/version"),
-        apiFetch("rules/version"),
+        apiFetch("/api/catalog/version"),
+        apiFetch("/api/rules/version"),
       ]);
       if (!catalogRes.ok || !rulesRes.ok) {
         throw new Error("Unable to fetch dependency versions.");
@@ -226,7 +226,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     }
   },
   fetchProjectList: async () => {
-    const response = await apiFetch("projects");
+    const response = await apiFetch("/api/projects");
     if (!response.ok) {
       set({ errorMessage: "Unable to load projects." });
       return;
@@ -235,7 +235,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     set({ projectList: items });
   },
   fetchRevisionHistory: async (projectId) => {
-    const response = await apiFetch(`projects/${projectId}/revisions`);
+    const response = await apiFetch(`/api/projects/${projectId}/revisions`);
     if (!response.ok) {
       set({ errorMessage: "Unable to load revision history." });
       return;
@@ -279,7 +279,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     try {
       let projectId = get().projectId;
       if (!projectId) {
-        const createRes = await apiFetch("projects", {
+        const createRes = await apiFetch("/api/projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: meta.name }),
@@ -291,7 +291,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
         projectId = created.projectId;
       }
 
-      const saveRes = await apiFetch(`projects/${projectId}/revisions`, {
+      const saveRes = await apiFetch(`/api/projects/${projectId}/revisions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: stringifySnapshot({ ...snapshot, projectId }),
@@ -332,8 +332,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
   },
   loadProject: async (projectId, revisionId) => {
     const url = revisionId
-      ? `projects/${projectId}/revisions/${revisionId}`
-      : `projects/${projectId}`;
+      ? `/api/projects/${projectId}/revisions/${revisionId}`
+      : `/api/projects/${projectId}`;
     const response = await apiFetch(url);
     if (!response.ok) {
       set({ errorMessage: "Unable to load project." });

@@ -80,7 +80,7 @@ const NEARMAP_MAX_ZOOM = 21;
 
 const MAP_MIN_ZOOM = 0;
 const MAP_MAX_ZOOM = 24;
-const NEARMAP_TILE_URL_TEMPLATE = apiUrl("nearmap/tiles/{z}/{x}/{y}.jpg");
+const NEARMAP_TILE_URL_TEMPLATE = apiUrl("/api/nearmap/tiles/{z}/{x}/{y}.jpg");
 
 const PROVIDER_CAPABILITIES: Record<
   SatelliteProvider,
@@ -781,13 +781,13 @@ export function MapOverlay({
       if (isApiDisabled()) {
         allowNearmap = false;
       } else {
-      try {
-        const response = await apiFetch("nearmap/health", { cache: "no-store" });
-        allowNearmap = response.ok;
-      } catch (error) {
-        console.warn("[MapOverlay] Failed to reach Nearmap health endpoint", error);
-        allowNearmap = false;
-      }
+        try {
+          const response = await apiFetch("/api/nearmap/health", { cache: "no-store" });
+          allowNearmap = response.ok;
+        } catch (error) {
+          console.warn("[MapOverlay] Failed to reach Nearmap health endpoint", error);
+          allowNearmap = false;
+        }
       }
 
       if (cancelled) return;

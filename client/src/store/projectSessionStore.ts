@@ -132,8 +132,8 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
     }
     try {
       const [catalogRes, rulesRes] = await Promise.all([
-        apiFetch("catalog/version"),
-        apiFetch("rules/version"),
+        apiFetch("/api/catalog/version"),
+        apiFetch("/api/rules/version"),
       ]);
       if (!catalogRes.ok || !rulesRes.ok) {
         throw new Error("Unable to fetch dependency versions.");
@@ -216,7 +216,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
     return true;
   },
   loadProject: async (projectId) => {
-    const response = await apiFetch(`projects/${projectId}`);
+    const response = await apiFetch(`/api/projects/${projectId}`);
     if (!response.ok) {
       set({ errorMessage: "Unable to load project." });
       return;
@@ -324,7 +324,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
     set({ saveStatus: "saving" });
     try {
       if (!projectId) {
-        const createRes = await apiFetch("projects", {
+        const createRes = await apiFetch("/api/projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -360,7 +360,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
         });
         writePersistedProjects({ projectsById: nextProjects, activeProjectId: created.id });
       } else {
-        const updateRes = await apiFetch(`projects/${projectId}`, {
+        const updateRes = await apiFetch(`/api/projects/${projectId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: projectName, snapshot }),
@@ -438,7 +438,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
     if (!authUser) return false;
     const project = get().projectsById[localId];
     if (!project) return false;
-    const response = await apiFetch("projects", {
+    const response = await apiFetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
