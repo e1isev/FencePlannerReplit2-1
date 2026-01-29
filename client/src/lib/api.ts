@@ -6,6 +6,14 @@ const resolveApiBase = () => {
 
 const API_BASE = resolveApiBase();
 
+const isGithubPagesHost = () => {
+  if (typeof window === "undefined") return false;
+  return window.location.hostname.endsWith("github.io");
+};
+
+export const isApiDisabled = () =>
+  import.meta.env.VITE_DISABLE_API === "true" || isGithubPagesHost();
+
 const normalizeApiPath = (path: string) => {
   const trimmed = path.replace(/^\/+/, "");
   if (trimmed.startsWith("api/")) {

@@ -12,7 +12,7 @@ import {
   type LocalProject,
 } from "@/lib/persistedProjects";
 import { useAuthStore } from "@/store/authStore";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, isApiDisabled } from "@/lib/api";
 
 export type ProjectSummary = {
   id: string;
@@ -126,6 +126,10 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
   setSessionIntent: (intent) => set({ sessionIntent: intent }),
   setProjectName: (name) => set({ projectName: name }),
   refreshDependencies: async () => {
+    if (isApiDisabled()) {
+      set({ dependencies: DEFAULT_DEPENDENCIES, errorMessage: null });
+      return;
+    }
     try {
       const [catalogRes, rulesRes] = await Promise.all([
         apiFetch("catalog/version"),

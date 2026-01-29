@@ -13,7 +13,7 @@ import {
   serializeProject,
   stringifySnapshot,
 } from "@/lib/projectSnapshot";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, isApiDisabled } from "@/lib/api";
 import type { ProjectState } from "@/types/project";
 
 const DEFAULT_PROJECT_NAME = "Untitled deck";
@@ -192,6 +192,16 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     set({ projectMeta: { ...meta, name } });
   },
   fetchDependencies: async () => {
+    if (isApiDisabled()) {
+      set({
+        dependencies: {
+          catalogVersion: "unknown",
+          ruleSetVersion: "unknown",
+        },
+        errorMessage: null,
+      });
+      return;
+    }
     try {
       const [catalogRes, rulesRes] = await Promise.all([
         apiFetch("catalog/version"),
