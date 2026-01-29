@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/authStore";
 import { loadGuestProjectSummaries, useProjectSessionStore } from "@/store/projectSessionStore";
+import { apiFetch } from "@/lib/api";
 import type { ProjectType } from "@shared/projectSnapshot";
 
 type ProjectSummary = {
@@ -38,7 +39,7 @@ export default function ProjectsDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/projects");
+      const response = await apiFetch("projects");
       if (!response.ok) throw new Error("Unable to load projects.");
       const data = (await response.json()) as ProjectSummary[];
       setProjects(data);
@@ -75,7 +76,7 @@ export default function ProjectsDashboard() {
   const handleRename = async (project: ProjectSummary) => {
     const nextName = renaming[project.id]?.trim();
     if (!nextName) return;
-    const response = await fetch(`/api/projects/${project.id}`, {
+    const response = await apiFetch(`projects/${project.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: nextName }),
@@ -87,7 +88,7 @@ export default function ProjectsDashboard() {
   };
 
   const handleDelete = async (project: ProjectSummary) => {
-    const response = await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
+    const response = await apiFetch(`projects/${project.id}`, { method: "DELETE" });
     if (response.ok) {
       void loadProjects();
     }

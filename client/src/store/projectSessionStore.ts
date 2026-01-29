@@ -12,6 +12,7 @@ import {
   type LocalProject,
 } from "@/lib/persistedProjects";
 import { useAuthStore } from "@/store/authStore";
+import { apiFetch } from "@/lib/api";
 
 export type ProjectSummary = {
   id: string;
@@ -127,8 +128,8 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
   refreshDependencies: async () => {
     try {
       const [catalogRes, rulesRes] = await Promise.all([
-        fetch("/api/catalog/version"),
-        fetch("/api/rules/version"),
+        apiFetch("catalog/version"),
+        apiFetch("rules/version"),
       ]);
       if (!catalogRes.ok || !rulesRes.ok) {
         throw new Error("Unable to fetch dependency versions.");
@@ -211,7 +212,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
     return true;
   },
   loadProject: async (projectId) => {
-    const response = await fetch(`/api/projects/${projectId}`);
+    const response = await apiFetch(`projects/${projectId}`);
     if (!response.ok) {
       set({ errorMessage: "Unable to load project." });
       return;
@@ -319,7 +320,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
     set({ saveStatus: "saving" });
     try {
       if (!projectId) {
-        const createRes = await fetch("/api/projects", {
+        const createRes = await apiFetch("projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -355,7 +356,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
         });
         writePersistedProjects({ projectsById: nextProjects, activeProjectId: created.id });
       } else {
-        const updateRes = await fetch(`/api/projects/${projectId}`, {
+        const updateRes = await apiFetch(`projects/${projectId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: projectName, snapshot }),
@@ -433,7 +434,7 @@ export const useProjectSessionStore = create<ProjectSessionState>((set, get) => 
     if (!authUser) return false;
     const project = get().projectsById[localId];
     if (!project) return false;
-    const response = await fetch("/api/projects", {
+    const response = await apiFetch("projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

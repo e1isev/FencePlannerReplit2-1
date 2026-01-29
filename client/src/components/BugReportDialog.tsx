@@ -20,6 +20,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useAppStore } from "@/store/appStore";
 import { useDeckingStore } from "@/store/deckingStore";
 import { useMapViewportStore } from "@/store/mapViewportStore";
+import { apiFetch } from "@/lib/api";
 import {
   bugReportLogger,
   captureCanvasScreenshot,
@@ -152,7 +153,7 @@ export function BugReportDialog() {
     };
 
     try {
-      const response = await fetch("/api/support/report", {
+      const response = await apiFetch("support/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
