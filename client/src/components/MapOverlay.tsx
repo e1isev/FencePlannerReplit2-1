@@ -15,7 +15,7 @@ import {
 } from "@/hooks/use-address-autocomplete";
 import { aflVenues } from "@/data/aflVenues";
 import { useMapViewportStore } from "@/store/mapViewportStore";
-import { apiFetch, apiUrl } from "@/lib/api";
+import { apiFetch, apiUrl, isApiDisabled } from "@/lib/api";
 
 type SearchResult = AddressSuggestion;
 
@@ -778,12 +778,16 @@ export function MapOverlay({
     const checkNearmapAvailability = async () => {
       let allowNearmap = true;
 
+      if (isApiDisabled()) {
+        allowNearmap = false;
+      } else {
       try {
         const response = await apiFetch("nearmap/health", { cache: "no-store" });
         allowNearmap = response.ok;
       } catch (error) {
         console.warn("[MapOverlay] Failed to reach Nearmap health endpoint", error);
         allowNearmap = false;
+      }
       }
 
       if (cancelled) return;

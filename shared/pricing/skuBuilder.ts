@@ -215,9 +215,14 @@ const PANEL_SKU_PATTERNS = [
 const POST_SKU_PATTERN = /^ResPost-(?:End|Corner|Line|Blank)-(?:Wht|Col)-\d+(?:\.\d+)?m$/;
 
 const GATE_SKU_PATTERNS = [
-  /^Gate-(?:Picket|Myst)-(?:Single|Double)-\d+(?:\.\d+)?H-\d+(?:\.\d+)?W$/,
-  /^Gate-(?:Pick|Myst)-Sliding-(?:\d+(?:\.\d+)?H-)?\d+(?:\.\d+)?\/\d+(?:\.\d+)?$/,
+  /^Gate-(?:Picket|Pick|Myst|Mystique)-(?:Single|Double)-\d+(?:\.\d+)?H-\d+(?:\.\d+)?W$/,
+  /^Gate-(?:Picket|Pick|Myst|Mystique)-Sliding-(?:\d+(?:\.\d+)?H-)?\d+(?:\.\d+)?(?:\/|-)\d+(?:\.\d+)?$/,
 ];
+
+const normalizeSlidingSku = (sku: string) => {
+  if (!sku.includes("Sliding")) return sku.trim();
+  return sku.trim().replace(/(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?$)/, "$1/$2");
+};
 
 const matchesAnyPattern = (sku: string, patterns: RegExp[]): boolean => {
   return patterns.some(p => p.test(sku));
@@ -236,17 +241,18 @@ export const validateCatalog = <T extends { sku: string; unit_price: number; typ
 
   rows.forEach((row, index) => {
     const { sku, unit_price, type } = row;
+    const normalizedSku = normalizeSlidingSku(sku);
 
-    if (seenSkus.has(sku)) {
+    if (seenSkus.has(normalizedSku)) {
       duplicates++;
-      errors.push({
+      warnings.push({
         type: "duplicate_sku",
         sku,
-        message: `Duplicate SKU found at row ${index + 1}, first seen at row ${seenSkus.get(sku)! + 1}`,
+        message: `Duplicate SKU found at row ${index + 1}, first seen at row ${seenSkus.get(normalizedSku)! + 1}`,
         row,
       });
     } else {
-      seenSkus.set(sku, index);
+      seenSkus.set(normalizedSku, index);
     }
 
     if (unit_price === null || unit_price === undefined || Number.isNaN(unit_price)) {
@@ -267,7 +273,7 @@ export const validateCatalog = <T extends { sku: string; unit_price: number; typ
 
     if (type === "Panel") {
       panels++;
-      if (!matchesAnyPattern(sku, PANEL_SKU_PATTERNS)) {
+      if (!matchesAnyPattern(normalizedSku, PANEL_SKU_PATTERNS)) {
         warnings.push({
           type: "invalid_sku_pattern",
           sku,
@@ -277,7 +283,7 @@ export const validateCatalog = <T extends { sku: string; unit_price: number; typ
       }
     } else if (type.includes("Post")) {
       posts++;
-      if (!POST_SKU_PATTERN.test(sku)) {
+      if (!POST_SKU_PATTERN.test(normalizedSku)) {
         warnings.push({
           type: "invalid_sku_pattern",
           sku,
@@ -287,7 +293,7 @@ export const validateCatalog = <T extends { sku: string; unit_price: number; typ
       }
     } else if (type.includes("Gate")) {
       gates++;
-      if (!matchesAnyPattern(sku, GATE_SKU_PATTERNS)) {
+      if (!matchesAnyPattern(normalizedSku, GATE_SKU_PATTERNS)) {
         warnings.push({
           type: "invalid_sku_pattern",
           sku,
