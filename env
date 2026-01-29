@@ -3,6 +3,10 @@
 VITE_SATELLITE_PROVIDER=
 # Optional: API key for MapTiler satellite tiles
 VITE_MAPTILER_API_KEY=
+# Optional: base URL for the deployed API (omit trailing /)
+VITE_API_BASE_URL=
+# Optional: enable demo mode to disable API-backed features (true/false)
+VITE_DEMO_MODE=
 
 # Server configuration
 # API key for the Nearmap Tile API (kept server-side only; do not prefix with VITE_)
