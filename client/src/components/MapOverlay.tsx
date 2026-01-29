@@ -15,6 +15,7 @@ import {
 } from "@/hooks/use-address-autocomplete";
 import { aflVenues } from "@/data/aflVenues";
 import { useMapViewportStore } from "@/store/mapViewportStore";
+import { apiFetch, apiUrl } from "@/lib/api";
 
 type SearchResult = AddressSuggestion;
 
@@ -79,7 +80,7 @@ const NEARMAP_MAX_ZOOM = 21;
 
 const MAP_MIN_ZOOM = 0;
 const MAP_MAX_ZOOM = 24;
-const NEARMAP_TILE_URL_TEMPLATE = "/api/nearmap/tiles/{z}/{x}/{y}.jpg";
+const NEARMAP_TILE_URL_TEMPLATE = apiUrl("nearmap/tiles/{z}/{x}/{y}.jpg");
 
 const PROVIDER_CAPABILITIES: Record<
   SatelliteProvider,
@@ -778,7 +779,7 @@ export function MapOverlay({
       let allowNearmap = true;
 
       try {
-        const response = await fetch("/api/nearmap/health", { cache: "no-store" });
+        const response = await apiFetch("nearmap/health", { cache: "no-store" });
         allowNearmap = response.ok;
       } catch (error) {
         console.warn("[MapOverlay] Failed to reach Nearmap health endpoint", error);
